@@ -5,6 +5,29 @@ abstract class UserViewModelEvent {}
 
 class CurrentUserEvent extends UserViewModelEvent {}
 
+class UpdateUserNameEvent extends UserViewModelEvent {
+  final String userID;
+  final String newUserName;
+  final ValueChanged<bool> resultCallBack;
+
+  UpdateUserNameEvent(
+      {required this.userID,
+      required this.newUserName,
+      required this.resultCallBack});
+}
+
+class UpdateUserProfilePhotoEvent extends UserViewModelEvent {
+  final String userID;
+  final String fileType;
+  final XFile? newProfilePhoto;
+
+  UpdateUserProfilePhotoEvent({
+    required this.userID,
+    required this.fileType,
+    required this.newProfilePhoto,
+  });
+}
+
 class SignAnonymouslyEvent extends UserViewModelEvent {}
 
 class SignOutEvent extends UserViewModelEvent {}

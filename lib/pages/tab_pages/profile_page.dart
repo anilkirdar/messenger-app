@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../bloc/user_view_model_bloc.dart';
 import '../../widgets/platform_sensitive_alert_dialog.dart';
@@ -15,20 +18,62 @@ class _ProfilePageState extends State<ProfilePage> {
   late bool textFieldIsChanged;
   late Color saveButtonColor;
   late Color saveButtonTextColor;
-  late String userName;
+  late String _userName;
+  late String? textFieldError;
+  late FocusNode _focusNode;
+  late final ImagePicker picker;
+  XFile? newProfilePhoto;
+  late bool profilePhotoIsChanged;
 
   @override
   void initState() {
     super.initState();
     textFieldIsChanged = false;
-    saveButtonColor = Colors.purple.shade200;
-    saveButtonTextColor = Colors.black38;
-    userName = '';
+    saveButtonColor = Colors.purple.shade500;
+    saveButtonTextColor = Colors.white;
+    _userName = '';
+    textFieldError = null;
+    _focusNode = FocusNode();
+    picker = ImagePicker();
+    profilePhotoIsChanged = false;
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void pickImageFromCamera() async {
+    final XFile? pickedImage =
+        await picker.pickImage(source: ImageSource.camera);
+    setState(() {
+      newProfilePhoto = pickedImage;
+      profilePhotoIsChanged = true;
+    });
+
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  void pickImageFromGallery() async {
+    final XFile? pickedImage =
+        await picker.pickImage(source: ImageSource.gallery);
+    setState(() {
+      newProfilePhoto = pickedImage;
+      profilePhotoIsChanged = true;
+    });
+
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final userModelBloc = context.read<UserViewModelBloc>();
+    debugPrint('PROFILE PHOTO URL: ${userModelBloc.user!.profilePhotoURL}');
 
     return Scaffold(
       appBar: AppBar(
@@ -61,11 +106,39 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(top: 16),
-                  child: CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.black, // profile icon
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (context) {
+                          return SizedBox(
+                            height: MediaQuery.of(context).size.height / 5,
+                            child: Column(
+                              children: [
+                                ListTile(
+                                  leading: const Icon(Icons.camera),
+                                  title: const Text('Take a photo'),
+                                  onTap: pickImageFromCamera,
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.image),
+                                  title: const Text('Choose from gallery'),
+                                  onTap: pickImageFromGallery,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundImage: newProfilePhoto != null
+                          ? FileImage(File(newProfilePhoto!.path))
+                          : NetworkImage(userModelBloc.user!.profilePhotoURL!),
+                    ),
                   ),
                 ),
                 Padding(
@@ -87,33 +160,37 @@ class _ProfilePageState extends State<ProfilePage> {
                   padding: const EdgeInsets.all(8),
                   child: TextFormField(
                     initialValue: userModelBloc.user!.userName,
+                    focusNode: _focusNode,
                     onChanged: (value) {
-                      userName = value;
+                      _userName = value;
                       setState(() {
-                        if (value == userModelBloc.user!.userName) {
-                          textFieldIsChanged = false;
+                        if (value.isEmpty) {
+                          textFieldError =
+                              'You can not leave empty this field!';
                         } else {
-                          textFieldIsChanged = true;
+                          textFieldError = null;
+                          if (value == userModelBloc.user!.userName) {
+                            textFieldIsChanged = false;
+                          } else {
+                            textFieldIsChanged = true;
+                          }
                         }
-            
-                        saveButtonColor = textFieldIsChanged
-                            ? Colors.purple.shade500
-                            : Colors.purple.shade200;
-                        saveButtonTextColor =
-                            textFieldIsChanged ? Colors.white : Colors.white54;
                       });
                     },
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
+                      errorText: textFieldError,
                       hintText: 'username123',
                       labelText: 'Username',
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () {},
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: saveButtonColor),
+                  onPressed: textFieldIsChanged || profilePhotoIsChanged
+                      ? () => updateUserInformation(context, userModelBloc)
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: saveButtonColor),
                   child: Text(
                     'Save',
                     style: TextStyle(
@@ -130,7 +207,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  makeApproveForSignOut(
+  void makeApproveForSignOut(
       BuildContext context, UserViewModelBloc userModelBloc) async {
     final bool? result = await const PlatformSensitiveAlertDialog(
       title: 'Sign Out',
@@ -141,6 +218,57 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (result!) {
       userModelBloc.add(SignOutEvent());
+    }
+  }
+
+  void updateUserInformation(
+      BuildContext context, UserViewModelBloc userModelBloc) async {
+    if (textFieldIsChanged || profilePhotoIsChanged) {
+      if (textFieldIsChanged) {
+        if (_userName.isNotEmpty) {
+          _focusNode.unfocus();
+          userModelBloc.add(UpdateUserNameEvent(
+            userID: userModelBloc.user!.userID,
+            newUserName: _userName,
+            resultCallBack: (result) async {
+              if (!result) {
+                await const PlatformSensitiveAlertDialog(
+                  title: 'Alert',
+                  content: "This username already taken!",
+                  mainButtonText: 'Done',
+                ).showAlertDialog(context);
+              } else {
+                textFieldIsChanged = false;
+                setState(() {});
+              }
+            },
+          ));
+        } else {
+          await const PlatformSensitiveAlertDialog(
+            title: 'Alert',
+            content: "You can not leave empty username field!",
+            mainButtonText: 'Done',
+          ).showAlertDialog(context);
+        }
+      }
+
+      if (profilePhotoIsChanged) {
+        userModelBloc.add(
+          UpdateUserProfilePhotoEvent(
+            userID: userModelBloc.user!.userID,
+            fileType: 'profile-photo',
+            newProfilePhoto: newProfilePhoto,
+          ),
+        );
+        profilePhotoIsChanged = false;
+        setState(() {});
+      }
+    } else {
+      await const PlatformSensitiveAlertDialog(
+        title: 'Alert',
+        content: "You haven't made any changes!",
+        mainButtonText: 'Done',
+      ).showAlertDialog(context);
     }
   }
 }

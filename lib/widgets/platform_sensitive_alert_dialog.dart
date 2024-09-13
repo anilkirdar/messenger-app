@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
-import '../services/platform_sensitive_widget_base.dart';
+import 'platform_sensitive_widget_base.dart';
 
 class PlatformSensitiveAlertDialog extends PlatformSensitiveWidgetBase {
   final String title;

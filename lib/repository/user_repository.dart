@@ -1,17 +1,23 @@
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../locator.dart';
 import '../models/user_model.dart';
-import '../services/auth_base.dart';
-import '../services/fake_auth_service.dart';
-import '../services/firebase_auth_service.dart';
-import '../services/firestore_db_service.dart';
+import '../services/auth/auth_service_base.dart';
+import '../services/auth/fake_auth_service.dart';
+import '../services/auth/firebase_auth_service.dart';
+import '../services/database/firestore_db_service.dart';
+import '../services/storage/firebase_storage_service.dart';
 
 enum AppMode { debug, release }
 
-class UserRepository implements AuthBase {
+class UserRepository implements AuthServiceBase {
   AppMode appMode = AppMode.release;
   FirebaseAuthService firebaseAuthService = locator<FirebaseAuthService>();
   FakeAuthService fakeAuthService = locator<FakeAuthService>();
   FirestoreDBService firestoreService = locator<FirestoreDBService>();
+  FirebaseStorageService firebaseStorageService =
+      locator<FirebaseStorageService>();
 
   @override
   Future<UserModel?> currentUser() async {
@@ -21,10 +27,41 @@ class UserRepository implements AuthBase {
       UserModel? user = await firebaseAuthService.currentUser();
 
       if (user != null) {
-        return await firestoreService.readUser(user.userId);
+        return await firestoreService.readUser(user.userID);
       } else {
         return null;
       }
+    }
+  }
+
+  Future<bool?> updateUserName(
+      {required String userID,
+      required String newUserName,
+      required ValueChanged<bool> resultCallBack}) async {
+    if (appMode == AppMode.debug) {
+      return false;
+    } else {
+      return await firestoreService.updateUserName(
+        userID: userID,
+        newUserName: newUserName,
+        resultCallBack: resultCallBack,
+      );
+    }
+  }
+
+  Future<String?> updateUserProfilePhoto(
+      {required String userID,
+      required String fileType,
+      required XFile? newProfilePhoto}) async {
+    if (appMode == AppMode.debug) {
+      return 'profile-photo-url';
+    } else {
+      String? newProfilePhotoURL = await firebaseStorageService.uploadFile(
+          userID, fileType, newProfilePhoto!);
+      await firestoreService.updateUserProfilePhoto(
+          userID: userID, newProfilePhotoURL: newProfilePhotoURL);
+
+      return newProfilePhotoURL;
     }
   }
 
@@ -55,7 +92,7 @@ class UserRepository implements AuthBase {
       bool result = await firestoreService.saveUser(user!);
 
       if (result) {
-        return await firestoreService.readUser(user.userId);
+        return await firestoreService.readUser(user.userID);
       } else {
         return null;
       }
@@ -69,7 +106,7 @@ class UserRepository implements AuthBase {
     } else {
       UserModel? user =
           await firebaseAuthService.signInWithEmail(email, password);
-      return await firestoreService.readUser(user!.userId);
+      return await firestoreService.readUser(user!.userID);
     }
   }
 
@@ -83,7 +120,7 @@ class UserRepository implements AuthBase {
       bool result = await firestoreService.saveUser(user!);
 
       if (result) {
-        return await firestoreService.readUser(user.userId);
+        return await firestoreService.readUser(user.userID);
       } else {
         return null;
       }

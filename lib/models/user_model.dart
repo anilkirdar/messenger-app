@@ -3,24 +3,25 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
-  final String userId;
+  final String userID;
   String email;
   String? userName;
-  String? profilURL;
+  String? profilePhotoURL;
   DateTime? createdAt;
   DateTime? updatedAt;
   int? level;
 
-  UserModel({required this.userId, this.email = ''});
+  UserModel({required this.userID, this.email = ''});
 
   Map<String, dynamic> toMap() {
     return {
-      'userId': userId,
+      'userID': userID,
       'email': email,
       'userName': userName ??
           email.substring(0, email.indexOf('@')) +
               randomNumCreator().toString(),
-      'profilURL': profilURL ?? '',
+      'profilePhotoURL':
+          profilePhotoURL ?? 'https://emrealtunbilek.com/wp-content/uploads/2016/10/apple-icon-72x72.png',
       'createdAt': createdAt ?? FieldValue.serverTimestamp(),
       'updatedAt': updatedAt ?? FieldValue.serverTimestamp(),
       'level': level ?? 1,
@@ -28,10 +29,10 @@ class UserModel {
   }
 
   UserModel.fromMap(Map<String, dynamic> map)
-      : userId = map['userId'],
+      : userID = map['userID'],
         email = map['email'],
         userName = map['userName'],
-        profilURL = map['profilURL'],
+        profilePhotoURL = map['profilePhotoURL'],
         createdAt = (map['createdAt'] as Timestamp).toDate(),
         updatedAt = (map['updatedAt'] as Timestamp).toDate(),
         level = map['level'];

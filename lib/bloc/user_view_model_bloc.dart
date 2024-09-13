@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../locator.dart';
 import '../../models/user_model.dart';
@@ -44,6 +45,34 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
         emit(UserViewModelBusy());
         user = await _userRepository.currentUser();
         emit(UserViewModelIdle());
+      } catch (e) {
+        emit(UserViewModelError());
+      }
+    });
+
+    on<UpdateUserNameEvent>((event, emit) async {
+      try {
+        bool? result = await _userRepository.updateUserName(
+            userID: event.userID,
+            newUserName: event.newUserName,
+            resultCallBack: event.resultCallBack);
+
+        if (result!) {
+          user!.userName = event.newUserName;
+        }
+      } catch (e) {
+        emit(UserViewModelError());
+      }
+    });
+
+    on<UpdateUserProfilePhotoEvent>((event, emit) async {
+      try {
+        String? url = await _userRepository.updateUserProfilePhoto(
+            userID: event.userID,
+            fileType: event.fileType,
+            newProfilePhoto: event.newProfilePhoto!);
+
+        user!.profilePhotoURL = url;
       } catch (e) {
         emit(UserViewModelError());
       }

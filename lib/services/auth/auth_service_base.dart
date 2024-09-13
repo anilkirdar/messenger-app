@@ -1,6 +1,6 @@
-import '../models/user_model.dart';
+import '../../models/user_model.dart';
 
-abstract class AuthBase {
+abstract class AuthServiceBase {
   Future<UserModel?> currentUser();
   Future<UserModel?> signAnonymously();
   Future<bool?> signOut();

@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../models/user_model.dart';
-import '../pages/sign_pages/email_sign_page.dart';
-import 'auth_base.dart';
+import '../../models/user_model.dart';
+import '../../pages/sign_pages/email_sign_page.dart';
+import 'auth_service_base.dart';
 
-class FirebaseAuthService implements AuthBase {
+class FirebaseAuthService implements AuthServiceBase {
   final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
   final googleSignIn = GoogleSignIn();
 
@@ -13,7 +13,7 @@ class FirebaseAuthService implements AuthBase {
     try {
       User? currentUser = firebaseAuth.currentUser;
       if (currentUser != null) {
-        return UserModel(userId: currentUser.uid);
+        return UserModel(userID: currentUser.uid);
       } else {
         return null;
       }
@@ -28,7 +28,7 @@ class FirebaseAuthService implements AuthBase {
   Future<UserModel?> signAnonymously() async {
     try {
       UserCredential userCredential = await firebaseAuth.signInAnonymously();
-      return UserModel(userId: userCredential.user!.uid);
+      return UserModel(userID: userCredential.user!.uid);
     } catch (e) {
       // ignore: avoid_print
       print('FIREBASE signInAnonymously SERVICE ERROR: $e');
@@ -68,7 +68,7 @@ class FirebaseAuthService implements AuthBase {
         UserCredential userCredential =
             await firebaseAuth.signInWithCredential(credential);
         return UserModel(
-            userId: userCredential.user!.uid,
+            userID: userCredential.user!.uid,
             email: userCredential.user!.email!);
       } else {
         return null;
@@ -86,7 +86,7 @@ class FirebaseAuthService implements AuthBase {
       UserCredential userCredential = await firebaseAuth
           .signInWithEmailAndPassword(email: email, password: password);
       return UserModel(
-          userId: userCredential.user!.uid, email: userCredential.user!.email!);
+          userID: userCredential.user!.uid, email: userCredential.user!.email!);
     } on FirebaseAuthException catch (e) {
       EmailSignPage.errorCode = e.code.toLowerCase();
       // ignore: avoid_print
@@ -101,7 +101,7 @@ class FirebaseAuthService implements AuthBase {
       UserCredential userCredential = await firebaseAuth
           .createUserWithEmailAndPassword(email: email, password: password);
       return UserModel(
-          userId: userCredential.user!.uid, email: userCredential.user!.email!);
+          userID: userCredential.user!.uid, email: userCredential.user!.email!);
     } on FirebaseAuthException catch (e) {
       EmailSignPage.errorCode = e.code.toLowerCase();
       // ignore: avoid_print
