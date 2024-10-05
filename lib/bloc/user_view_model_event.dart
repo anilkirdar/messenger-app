@@ -5,15 +5,50 @@ abstract class UserViewModelEvent {}
 
 class CurrentUserEvent extends UserViewModelEvent {}
 
+class GetUsersEvent extends UserViewModelEvent {
+  final UserModel user;
+  final int countOfWillBeFetchedUserCount;
+
+  GetUsersEvent(
+      {required this.user, required this.countOfWillBeFetchedUserCount});
+}
+
+class GetMessagesEvent extends UserViewModelEvent {
+  final String currentUserID;
+  final String otherUserID;
+  final MessageModel? message;
+  final int countOfWillBeFetchedMessageCount;
+  final bool isInitFunction;
+  final BuildContext context;
+
+  GetMessagesEvent(
+      {required this.currentUserID,
+      required this.otherUserID,
+      required this.message,
+      required this.countOfWillBeFetchedMessageCount,
+      required this.isInitFunction,
+      required this.context});
+}
+
+class SaveChatMessageEvent extends UserViewModelEvent {
+  final MessageModel message;
+  final ValueChanged<bool> resultCallBack;
+
+  SaveChatMessageEvent({required this.resultCallBack, required this.message});
+}
+
+class ConvertErrorStateEvent extends UserViewModelEvent {}
+
 class UpdateUserNameEvent extends UserViewModelEvent {
   final String userID;
   final String newUserName;
   final ValueChanged<bool> resultCallBack;
 
-  UpdateUserNameEvent(
-      {required this.userID,
-      required this.newUserName,
-      required this.resultCallBack});
+  UpdateUserNameEvent({
+    required this.userID,
+    required this.newUserName,
+    required this.resultCallBack,
+  });
 }
 
 class UpdateUserProfilePhotoEvent extends UserViewModelEvent {

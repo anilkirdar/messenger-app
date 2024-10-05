@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-enum TabItem { users, profile }
+enum TabItem { users, messages, profile }
 
 class TabItemData {
   final String title;
@@ -9,8 +10,10 @@ class TabItemData {
   TabItemData({required this.title, required this.icon});
 
   static Map<TabItem, TabItemData> allTabs = {
-    TabItem.users: TabItemData(title: 'Users', icon: Icons.person),
+    TabItem.users: TabItemData(title: 'Users', icon: FontAwesomeIcons.users),
+    TabItem.messages:
+        TabItemData(title: 'Messages', icon: FontAwesomeIcons.solidMessage),
     TabItem.profile:
-        TabItemData(title: 'Profile', icon: Icons.supervised_user_circle),
+        TabItemData(title: 'Profile', icon: FontAwesomeIcons.solidUser),
   };
 }

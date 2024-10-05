@@ -2,10 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../bloc/user_view_model_bloc.dart';
-import '../../widgets/platform_sensitive_alert_dialog.dart';
+import '../../widgets/alert_dialog_widget.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -73,13 +74,12 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final userModelBloc = context.read<UserViewModelBloc>();
-    debugPrint('PROFILE PHOTO URL: ${userModelBloc.user!.profilePhotoURL}');
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Profile Page',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          'Profile',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
         ),
         actions: [
           Padding(
@@ -91,8 +91,8 @@ class _ProfilePageState extends State<ProfilePage> {
               child: const Text(
                 'Sign Out',
                 style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
+                  color: Colors.red,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -118,12 +118,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             child: Column(
                               children: [
                                 ListTile(
-                                  leading: const Icon(Icons.camera),
+                                  leading:
+                                      const FaIcon(FontAwesomeIcons.camera),
                                   title: const Text('Take a photo'),
                                   onTap: pickImageFromCamera,
                                 ),
                                 ListTile(
-                                  leading: const Icon(Icons.image),
+                                  leading: const FaIcon(FontAwesomeIcons.image),
                                   title: const Text('Choose from gallery'),
                                   onTap: pickImageFromGallery,
                                 ),
@@ -135,6 +136,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     },
                     child: CircleAvatar(
                       radius: 60,
+                      backgroundColor: Colors.white,
                       backgroundImage: newProfilePhoto != null
                           ? FileImage(File(newProfilePhoto!.path))
                           : NetworkImage(userModelBloc.user!.profilePhotoURL!),
@@ -164,7 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     onChanged: (value) {
                       _userName = value;
                       setState(() {
-                        if (value.isEmpty) {
+                        if (value.trim().isEmpty) {
                           textFieldError =
                               'You can not leave empty this field!';
                         } else {
@@ -209,11 +211,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void makeApproveForSignOut(
       BuildContext context, UserViewModelBloc userModelBloc) async {
-    final bool? result = await const PlatformSensitiveAlertDialog(
-      title: 'Sign Out',
-      content: 'Are you sure?',
-      mainButtonText: 'Approve',
-      cancelButtonText: 'Reject',
+    final bool? result = await const AlertDialogWidget(
+      content: 'Sign out of your account?',
+      mainButtonTextColor: Colors.red,
+      mainButtonText: 'Sign out',
+      cancelButtonText: 'Cancel',
     ).showAlertDialog(context);
 
     if (result!) {
@@ -225,30 +227,22 @@ class _ProfilePageState extends State<ProfilePage> {
       BuildContext context, UserViewModelBloc userModelBloc) async {
     if (textFieldIsChanged || profilePhotoIsChanged) {
       if (textFieldIsChanged) {
-        if (_userName.isNotEmpty) {
+        if (_userName.trim().isNotEmpty) {
           _focusNode.unfocus();
           userModelBloc.add(UpdateUserNameEvent(
             userID: userModelBloc.user!.userID,
-            newUserName: _userName,
+            newUserName: _userName.trim(),
             resultCallBack: (result) async {
               if (!result) {
-                await const PlatformSensitiveAlertDialog(
-                  title: 'Alert',
-                  content: "This username already taken!",
-                  mainButtonText: 'Done',
-                ).showAlertDialog(context);
+                setState(() {
+                  textFieldError = "This username already taken!";
+                });
               } else {
                 textFieldIsChanged = false;
                 setState(() {});
               }
             },
           ));
-        } else {
-          await const PlatformSensitiveAlertDialog(
-            title: 'Alert',
-            content: "You can not leave empty username field!",
-            mainButtonText: 'Done',
-          ).showAlertDialog(context);
         }
       }
 
@@ -264,10 +258,10 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {});
       }
     } else {
-      await const PlatformSensitiveAlertDialog(
-        title: 'Alert',
+      await const AlertDialogWidget(
         content: "You haven't made any changes!",
         mainButtonText: 'Done',
+        mainButtonTextColor: Colors.black,
       ).showAlertDialog(context);
     }
   }

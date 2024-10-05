@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../locator.dart';
+import '../models/chat_model.dart';
+import '../models/message_model.dart';
 import '../models/user_model.dart';
-import '../services/auth/auth_service_base.dart';
 import '../services/auth/fake_auth_service.dart';
 import '../services/auth/firebase_auth_service.dart';
 import '../services/database/firestore_db_service.dart';
@@ -11,26 +11,50 @@ import '../services/storage/firebase_storage_service.dart';
 
 enum AppMode { debug, release }
 
-class UserRepository implements AuthServiceBase {
-  AppMode appMode = AppMode.release;
-  FirebaseAuthService firebaseAuthService = locator<FirebaseAuthService>();
-  FakeAuthService fakeAuthService = locator<FakeAuthService>();
-  FirestoreDBService firestoreService = locator<FirestoreDBService>();
-  FirebaseStorageService firebaseStorageService =
+class UserRepository {
+  final AppMode _appMode = AppMode.release;
+  final FirebaseAuthService _firebaseAuthService =
+      locator<FirebaseAuthService>();
+  final FakeAuthService _fakeAuthService = locator<FakeAuthService>();
+  final FirestoreDBService _firestoreService = locator<FirestoreDBService>();
+  final FirebaseStorageService _firebaseStorageService =
       locator<FirebaseStorageService>();
 
-  @override
   Future<UserModel?> currentUser() async {
-    if (appMode == AppMode.debug) {
-      return await fakeAuthService.currentUser();
+    if (_appMode == AppMode.debug) {
+      return await _fakeAuthService.currentUser();
     } else {
-      UserModel? user = await firebaseAuthService.currentUser();
+      UserModel? user = await _firebaseAuthService.currentUser();
 
       if (user != null) {
-        return await firestoreService.readUser(user.userID);
+        return await _firestoreService.readUser(user.userID);
       } else {
         return null;
       }
+    }
+  }
+
+  Future<List<UserModel>> getUsers(
+      {required UserModel user,
+      required int countOfWillBeFetchedUserCount}) async {
+    if (_appMode == AppMode.debug) {
+      return [];
+    } else {
+      return await _firestoreService.getUsers(
+        user: user,
+        countOfWillBeFetchedUserCount: countOfWillBeFetchedUserCount,
+      );
+    }
+  }
+
+  Future<bool> saveChatMessage(
+      {required MessageModel message,
+      required ValueChanged<bool> resultCallBack}) async {
+    if (_appMode == AppMode.debug) {
+      return false;
+    } else {
+      return await _firestoreService.saveChatMessage(
+          message: message, resultCallBack: resultCallBack);
     }
   }
 
@@ -38,10 +62,10 @@ class UserRepository implements AuthServiceBase {
       {required String userID,
       required String newUserName,
       required ValueChanged<bool> resultCallBack}) async {
-    if (appMode == AppMode.debug) {
+    if (_appMode == AppMode.debug) {
       return false;
     } else {
-      return await firestoreService.updateUserName(
+      return await _firestoreService.updateUserName(
         userID: userID,
         newUserName: newUserName,
         resultCallBack: resultCallBack,
@@ -53,74 +77,129 @@ class UserRepository implements AuthServiceBase {
       {required String userID,
       required String fileType,
       required XFile? newProfilePhoto}) async {
-    if (appMode == AppMode.debug) {
+    if (_appMode == AppMode.debug) {
       return 'profile-photo-url';
     } else {
-      String? newProfilePhotoURL = await firebaseStorageService.uploadFile(
+      String? newProfilePhotoURL = await _firebaseStorageService.uploadFile(
           userID, fileType, newProfilePhoto!);
-      await firestoreService.updateUserProfilePhoto(
+      await _firestoreService.updateUserProfilePhoto(
           userID: userID, newProfilePhotoURL: newProfilePhotoURL);
 
       return newProfilePhotoURL;
     }
   }
 
-  @override
+  Future<List<MessageModel>> getMessages(
+      {required String currentUserID,
+      required String otherUserID,
+      MessageModel? message,
+      required int countOfWillBeFetchedMessageCount,
+      required bool isInitFunction}) async {
+    if (_appMode == AppMode.debug) {
+      return [];
+    } else {
+      return _firestoreService.getMessages(
+          currentUserID: currentUserID,
+          otherUserID: otherUserID,
+          message: message,
+          countOfWillBeFetchedMessageCount: countOfWillBeFetchedMessageCount,
+          isInitFunction: isInitFunction);
+    }
+  }
+
+  // void activateMessageListener(
+  //     {required String currentUserID,
+  //     required String otherUserID,
+  //     required BuildContext context}) {
+  //   if (_appMode == AppMode.debug) {
+  //     return;
+  //   } else {
+  //     return _firestoreService.activateMessageListener(
+  //       currentUserID: currentUserID,
+  //       otherUserID: otherUserID,
+  //       context: context,
+  //     );
+  //   }
+  // }
+
+  Stream<List<MessageModel?>> messageListener(
+      {required String currentUserID,
+      required String otherUserID,
+      required BuildContext context}) {
+    if (_appMode == AppMode.debug) {
+      return const Stream.empty();
+    } else {
+      return _firestoreService.messageListener(
+        currentUserID: currentUserID,
+        otherUserID: otherUserID,
+      );
+    }
+  }
+
+  Future<List<ChatModel>> getChats({required UserModel currentUser}) async {
+    if (_appMode == AppMode.debug) {
+      return [];
+    } else {
+      return _firestoreService.getChats(currentUser: currentUser);
+    }
+  }
+
   Future<UserModel?> signAnonymously() async {
-    if (appMode == AppMode.debug) {
-      return await fakeAuthService.signAnonymously();
+    if (_appMode == AppMode.debug) {
+      return await _fakeAuthService.signAnonymously();
     } else {
-      return await firebaseAuthService.signAnonymously();
+      return await _firebaseAuthService.signAnonymously();
     }
   }
 
-  @override
   Future<bool?> signOut() async {
-    if (appMode == AppMode.debug) {
-      return await fakeAuthService.signOut();
+    if (_appMode == AppMode.debug) {
+      return await _fakeAuthService.signOut();
     } else {
-      return await firebaseAuthService.signOut();
+      return await _firebaseAuthService.signOut();
     }
   }
 
-  @override
   Future<UserModel?> signWithGoogle() async {
-    if (appMode == AppMode.debug) {
-      return await fakeAuthService.signWithGoogle();
+    if (_appMode == AppMode.debug) {
+      return await _fakeAuthService.signWithGoogle();
     } else {
-      UserModel? user = await firebaseAuthService.signWithGoogle();
-      bool result = await firestoreService.saveUser(user!);
+      UserModel? user = await _firebaseAuthService.signWithGoogle();
+      bool? result = await _firestoreService.saveUser(user);
 
       if (result) {
-        return await firestoreService.readUser(user.userID);
+        return await _firestoreService.readUser(user!.userID);
       } else {
         return null;
       }
     }
   }
 
-  @override
   Future<UserModel?> signInWithEmail(String email, String password) async {
-    if (appMode == AppMode.debug) {
-      return await fakeAuthService.signInWithEmail(email, password);
+    if (_appMode == AppMode.debug) {
+      return await _fakeAuthService.signInWithEmail(email, password);
     } else {
       UserModel? user =
-          await firebaseAuthService.signInWithEmail(email, password);
-      return await firestoreService.readUser(user!.userID);
+          await _firebaseAuthService.signInWithEmail(email, password);
+
+      if (user != null) {
+        return await _firestoreService.readUser(user.userID);
+      } else {
+        return null;
+      }
     }
   }
 
-  @override
   Future<UserModel?> signUpWithEmail(String email, String password) async {
-    if (appMode == AppMode.debug) {
-      return await fakeAuthService.signUpWithEmail(email, password);
+    if (_appMode == AppMode.debug) {
+      return await _fakeAuthService.signUpWithEmail(email, password);
     } else {
       UserModel? user =
-          await firebaseAuthService.signUpWithEmail(email, password);
-      bool result = await firestoreService.saveUser(user!);
+          await _firebaseAuthService.signUpWithEmail(email, password);
+      bool result = await _firestoreService.saveUser(user);
 
       if (result) {
-        return await firestoreService.readUser(user.userID);
+        return await _firestoreService.readUser(user!.userID);
       } else {
         return null;
       }

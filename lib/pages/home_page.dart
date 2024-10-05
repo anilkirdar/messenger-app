@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../models/user_model.dart';
-import '../../tab_items.dart';
-import '../../widgets/custom_bottom_nav.dart';
-import '../tab_pages/profile_page.dart';
-import '../tab_pages/users_page.dart';
+import '../models/user_model.dart';
+import '../tab_items.dart';
+import '../widgets/custom_bottom_nav.dart';
+import 'tab_pages/messages_page.dart';
+import 'tab_pages/profile_page.dart';
+import 'tab_pages/users_page.dart';
 
 class HomePage extends StatefulWidget {
   final UserModel user;
@@ -16,15 +17,17 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late TabItem _currentTab;
-  Map<TabItem, Widget> allPages() {
+  Map<TabItem, Widget> _allPages() {
     return {
       TabItem.users: const UsersPage(),
+      TabItem.messages: const MessagesPage(),
       TabItem.profile: const ProfilePage(),
     };
   }
 
   Map<TabItem, GlobalKey<NavigatorState>> navigatorKeys = {
     TabItem.users: GlobalKey<NavigatorState>(),
+    TabItem.messages: GlobalKey<NavigatorState>(),
     TabItem.profile: GlobalKey<NavigatorState>(),
   };
 
@@ -40,7 +43,7 @@ class _HomePageState extends State<HomePage> {
       canPop: false,
       child: CustomBottomNav(
         currentTab: _currentTab,
-        pageCreator: allPages(),
+        pageCreator: _allPages(),
         navigatorKeys: navigatorKeys,
         onSelectedTab: (tabItem) {
           if (tabItem == _currentTab) {

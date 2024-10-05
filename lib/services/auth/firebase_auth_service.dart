@@ -5,13 +5,13 @@ import '../../pages/sign_pages/email_sign_page.dart';
 import 'auth_service_base.dart';
 
 class FirebaseAuthService implements AuthServiceBase {
-  final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
-  final googleSignIn = GoogleSignIn();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final _googleSignIn = GoogleSignIn();
 
   @override
   Future<UserModel?> currentUser() async {
     try {
-      User? currentUser = firebaseAuth.currentUser;
+      User? currentUser = _firebaseAuth.currentUser;
       if (currentUser != null) {
         return UserModel(userID: currentUser.uid);
       } else {
@@ -27,7 +27,7 @@ class FirebaseAuthService implements AuthServiceBase {
   @override
   Future<UserModel?> signAnonymously() async {
     try {
-      UserCredential userCredential = await firebaseAuth.signInAnonymously();
+      UserCredential userCredential = await _firebaseAuth.signInAnonymously();
       return UserModel(userID: userCredential.user!.uid);
     } catch (e) {
       // ignore: avoid_print
@@ -39,10 +39,10 @@ class FirebaseAuthService implements AuthServiceBase {
   @override
   Future<bool?> signOut() async {
     try {
-      if (googleSignIn.currentUser != null) {
-        await googleSignIn.signOut();
+      if (_googleSignIn.currentUser != null) {
+        await _googleSignIn.signOut();
       }
-      await firebaseAuth.signOut();
+      await _firebaseAuth.signOut();
       return true;
     } catch (e) {
       // ignore: avoid_print
@@ -54,7 +54,7 @@ class FirebaseAuthService implements AuthServiceBase {
   @override
   Future<UserModel?> signWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser != null) {
         final GoogleSignInAuthentication googleAuth =
@@ -66,7 +66,7 @@ class FirebaseAuthService implements AuthServiceBase {
         );
 
         UserCredential userCredential =
-            await firebaseAuth.signInWithCredential(credential);
+            await _firebaseAuth.signInWithCredential(credential);
         return UserModel(
             userID: userCredential.user!.uid,
             email: userCredential.user!.email!);
@@ -83,7 +83,7 @@ class FirebaseAuthService implements AuthServiceBase {
   @override
   Future<UserModel?> signInWithEmail(String email, String password) async {
     try {
-      UserCredential userCredential = await firebaseAuth
+      UserCredential userCredential = await _firebaseAuth
           .signInWithEmailAndPassword(email: email, password: password);
       return UserModel(
           userID: userCredential.user!.uid, email: userCredential.user!.email!);
@@ -98,7 +98,7 @@ class FirebaseAuthService implements AuthServiceBase {
   @override
   Future<UserModel?> signUpWithEmail(String email, String password) async {
     try {
-      UserCredential userCredential = await firebaseAuth
+      UserCredential userCredential = await _firebaseAuth
           .createUserWithEmailAndPassword(email: email, password: password);
       return UserModel(
           userID: userCredential.user!.uid, email: userCredential.user!.email!);

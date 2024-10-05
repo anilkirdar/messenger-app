@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,17 +5,20 @@ import 'package:image_picker/image_picker.dart';
 import '../../locator.dart';
 import '../../models/user_model.dart';
 import '../../repository/user_repository.dart';
+import '../models/message_model.dart';
 
 part 'user_view_model_event.dart';
 part 'user_view_model_state.dart';
 
 class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
   final UserRepository _userRepository = locator<UserRepository>();
+  List<UserModel>? userList;
+  List<MessageModel>? messageList;
   UserModel? user;
   String? emailErrorMessage;
   String? passErrorMessage;
 
-  UserViewModelBloc() : super(UserViewModelIdle()) {
+  UserViewModelBloc() : super(UserViewModelIdleState()) {
     bool checkUserEmailAndPassword(
         {required String email, required String pass}) {
       bool result = true;
@@ -40,97 +42,124 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
       return result;
     }
 
-    on<CurrentUserEvent>((event, emit) async {
-      try {
-        emit(UserViewModelBusy());
-        user = await _userRepository.currentUser();
-        emit(UserViewModelIdle());
-      } catch (e) {
-        emit(UserViewModelError());
+    on<ConvertErrorStateEvent>((event, emit) {
+      if (state is UserViewModelErrorState) {
+        emit(UserViewModelIdleState());
       }
     });
 
-    on<UpdateUserNameEvent>((event, emit) async {
-      try {
-        bool? result = await _userRepository.updateUserName(
-            userID: event.userID,
-            newUserName: event.newUserName,
-            resultCallBack: event.resultCallBack);
+    on<CurrentUserEvent>((event, emit) async {
+      emit(UserViewModelBusyState());
+      user = await _userRepository.currentUser();
+      emit(UserViewModelIdleState());
+    });
 
-        if (result!) {
-          user!.userName = event.newUserName;
-        }
-      } catch (e) {
-        emit(UserViewModelError());
+    on<SaveChatMessageEvent>((event, emit) async {
+      await _userRepository.saveChatMessage(
+          message: event.message, resultCallBack: event.resultCallBack);
+    });
+
+    on<GetUsersEvent>((event, emit) async {
+      emit(UserViewModelUserDBBusyState());
+      userList = await _userRepository.getUsers(
+        user: event.user,
+        countOfWillBeFetchedUserCount: event.countOfWillBeFetchedUserCount,
+      );
+      emit(UserViewModelIdleState());
+    });
+
+    on<GetMessagesEvent>((event, emit) async {
+      if (event.isInitFunction) {
+        messageList = null;
+      }
+      emit(UserViewModelMessageDBBusyState());
+      messageList = await _userRepository.getMessages(
+        currentUserID: event.currentUserID,
+        otherUserID: event.otherUserID,
+        message: event.message,
+        countOfWillBeFetchedMessageCount:
+            event.countOfWillBeFetchedMessageCount,
+        isInitFunction: event.isInitFunction,
+      );
+
+      // if (event.isInitFunction) {
+      //   _userRepository.activateMessageListener(
+      //     currentUserID: event.currentUserID,
+      //     otherUserID: event.otherUserID,
+      //     // ignore: use_build_context_synchronously
+      //     context: event.context,
+      //   );
+      // }
+
+      emit(UserViewModelIdleState());
+    });
+
+    on<UpdateUserNameEvent>((event, emit) async {
+      bool? result = await _userRepository.updateUserName(
+          userID: event.userID,
+          newUserName: event.newUserName,
+          resultCallBack: event.resultCallBack);
+
+      if (result!) {
+        user!.userName = event.newUserName;
       }
     });
 
     on<UpdateUserProfilePhotoEvent>((event, emit) async {
-      try {
-        String? url = await _userRepository.updateUserProfilePhoto(
-            userID: event.userID,
-            fileType: event.fileType,
-            newProfilePhoto: event.newProfilePhoto!);
+      String? url = await _userRepository.updateUserProfilePhoto(
+          userID: event.userID,
+          fileType: event.fileType,
+          newProfilePhoto: event.newProfilePhoto!);
 
-        user!.profilePhotoURL = url;
-      } catch (e) {
-        emit(UserViewModelError());
-      }
+      user!.profilePhotoURL = url;
     });
 
     on<SignAnonymouslyEvent>((event, emit) async {
-      try {
-        emit(UserViewModelBusy());
-        user = await _userRepository.signAnonymously();
-        emit(UserViewModelIdle());
-      } catch (e) {
-        emit(UserViewModelError());
-      }
+      emit(UserViewModelBusyState());
+      user = await _userRepository.signAnonymously();
+      emit(UserViewModelIdleState());
     });
 
     on<SignOutEvent>((event, emit) {
-      try {
-        emit(UserViewModelBusy());
-        _userRepository.signOut();
-        user = null;
-        emit(UserViewModelIdle());
-      } catch (e) {
-        emit(UserViewModelError());
-      }
+      emit(UserViewModelBusyState());
+      _userRepository.signOut();
+      user = null;
+      emit(UserViewModelIdleState());
     });
 
     on<SignWithGoogleEvent>((event, emit) async {
       try {
-        emit(UserViewModelBusy());
+        emit(UserViewModelBusyState());
         user = await _userRepository.signWithGoogle();
-        emit(UserViewModelIdle());
+        emit(UserViewModelIdleState());
       } catch (e) {
-        emit(UserViewModelError());
+        emit(UserViewModelErrorState());
       }
     });
 
     on<SignInWithEmailEvent>((event, emit) async {
-      try {
-        emit(UserViewModelBusy());
-        user = await _userRepository.signInWithEmail(event.email, event.pass);
-        emit(UserViewModelIdle());
-      } catch (e) {
-        emit(UserViewModelError());
+      emit(UserViewModelBusyState());
+      user = await _userRepository.signInWithEmail(event.email, event.pass);
+      if (user != null) {
+        emit(UserViewModelIdleState());
+      } else {
+        emit(UserViewModelErrorState());
       }
     });
 
     on<SignUpWithEmailEvent>((event, emit) async {
-      try {
-        if (checkUserEmailAndPassword(email: event.email, pass: event.pass)) {
-          emit(UserViewModelBusy());
-          user = await _userRepository.signUpWithEmail(
-            event.email,
-            event.pass,
-          );
-          emit(UserViewModelIdle());
+      if (checkUserEmailAndPassword(email: event.email, pass: event.pass)) {
+        emit(UserViewModelBusyState());
+        user = await _userRepository.signUpWithEmail(
+          event.email,
+          event.pass,
+        );
+
+        if (user != null) {
+          emit(UserViewModelIdleState());
+        } else {
+          emit(UserViewModelErrorState());
         }
-      } catch (e) {
-        emit(UserViewModelError());
       }
     });
   }

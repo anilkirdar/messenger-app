@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../bloc/user_view_model_bloc.dart';
 import '../../widgets/social_login_button.dart';
 import 'email_sign_page.dart';
 
-// ignore: must_be_immutable
 class SignInPage extends StatelessWidget {
   const SignInPage({super.key});
 
@@ -54,18 +54,10 @@ class SignInPage extends StatelessWidget {
                 },
                 buttonColor: Colors.blue,
                 buttonText: 'Sign with Email',
-                buttonIcon:
-                    const Icon(Icons.email, size: 30, color: Colors.white),
+                buttonIcon: const FaIcon(FontAwesomeIcons.solidEnvelope,
+                    size: 30, color: Colors.white),
                 buttonTextColor: Colors.white,
               ),
-              // SocialLoginButton(
-              //   onPressed: () => userModelBloc.add(SignAnonymouslyEvent()),
-              //   buttonColor: Colors.teal,
-              //   buttonIcon: const Icon(Icons.supervised_user_circle,
-              //       size: 30, color: Colors.white),
-              //   buttonText: 'Sign with Anonymously',
-              //   buttonTextColor: Colors.white,
-              // ),
             ],
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../tab_items.dart';
 
 // ignore: must_be_immutable
@@ -24,6 +25,7 @@ class CustomBottomNav extends StatelessWidget {
         },
         items: [
           createNavItem(TabItem.users),
+          createNavItem(TabItem.messages),
           createNavItem(TabItem.profile),
         ],
       ),
@@ -43,7 +45,7 @@ class CustomBottomNav extends StatelessWidget {
 
     return BottomNavigationBarItem(
       label: currentTab.title,
-      icon: Icon(currentTab.icon),
+      icon: FaIcon(currentTab.icon),
     );
   }
 }

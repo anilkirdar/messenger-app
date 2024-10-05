@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'bloc/user_view_model_bloc.dart';
 import 'firebase_options.dart';
 import 'locator.dart';
-import 'pages/app/landing_page.dart';
+import 'pages/landing_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
       create: (context) => UserViewModelBloc()..add(CurrentUserEvent()),
       child: MaterialApp(
         title: 'Messenger App',
-        theme: ThemeData(primarySwatch: Colors.purple),
+        theme: ThemeData(primarySwatch: Colors.blue),
         debugShowCheckedModeBanner: false,
         home: const LandingPage(),
       ),
