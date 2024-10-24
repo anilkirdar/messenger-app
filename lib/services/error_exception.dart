@@ -1,14 +1,34 @@
+enum ErrorType { email, pass, both, general }
+
 class ErrorException {
-  static showError(String? errorCode) {
+  static Map<String, dynamic> getError(String? errorCode) {
     switch (errorCode) {
       case 'email-already-in-use':
-        return 'Email address already in use!';
+        return {
+          'errorType': ErrorType.email,
+          'error': 'Email address already in use!'
+        };
       case 'invalid-email':
-        return 'Invalid email address!!';
+        return {
+          'errorType': ErrorType.email,
+          'error': 'Invalid email address!'
+        };
       case 'invalid-credential':
-        return "This credential wasn't found! Please sign up.";
+        return {
+          'errorType': ErrorType.both,
+          'error':
+              "These credential incorrect! Please check your email and password."
+        };
+      case 'network-request-failed':
+        return {
+          'errorType': ErrorType.general,
+          'error': 'An internet error occurred',
+        };
       default:
-        'An error occurred';
+        return {
+          'errorType': ErrorType.general,
+          'error': 'An error occurred',
+        };
     }
   }
 }

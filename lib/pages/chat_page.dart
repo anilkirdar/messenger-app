@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:encrypt/encrypt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -28,6 +30,8 @@ class _ChatPageState extends State<ChatPage> {
   StreamSubscription? _streamSubscription;
   final int _countOfWillBeFetchedMessageCount = 15;
   late bool _hasMore;
+  late final _key;
+  late final _iv;
 
   @override
   void initState() {
@@ -35,6 +39,8 @@ class _ChatPageState extends State<ChatPage> {
     _messageController = TextEditingController();
     _scrollController = ScrollController();
     _hasMore = true;
+    _key = encrypt.Key.fromBase64('asjkdhjashdkjashdkhasjdasjkdaskj');
+    _iv = IV.fromLength(16);
     initStateMethods();
   }
 
@@ -158,6 +164,9 @@ class _ChatPageState extends State<ChatPage> {
                         color: Colors.white,
                       ),
                       onPressed: () {
+                        debugPrint(
+                            'USERID: ${widget.currentUser.userID}--${widget.otherUser.userID}');
+
                         if (_messageController.text.trim().isNotEmpty) {
                           MessageModel message = MessageModel(
                             fromWho: widget.currentUser,
@@ -241,6 +250,10 @@ class _ChatPageState extends State<ChatPage> {
         if (_messageList != null) {
           if (messageListFromStream.isNotEmpty) {
             if (messageListFromStream[0] != null) {
+              messageListFromStream[0]!.message = decryptMessage(
+                  encryptedMessage: messageListFromStream[0]!.message);
+              decryptMessage(
+                  encryptedMessage: messageListFromStream[0]!.message);
               _messageList!.insert(0, messageListFromStream[0]!);
 
               if (mounted) {
@@ -251,5 +264,13 @@ class _ChatPageState extends State<ChatPage> {
         }
       },
     );
+  }
+
+  String decryptMessage({required String encryptedMessage}) {
+    final encrypter = Encrypter(AES(_key));
+
+    final decrypted = encrypter
+        .decrypt(encrypt.Encrypted.fromBase64(encryptedMessage), iv: _iv);
+    return decrypted;
   }
 }

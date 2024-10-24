@@ -39,6 +39,33 @@ class SaveChatMessageEvent extends UserViewModelEvent {
 
 class ConvertErrorStateEvent extends UserViewModelEvent {}
 
+class GetChatsEvent extends UserViewModelEvent {
+  final UserModel currentUser;
+  final int countOfWillBeFetchedChatCount;
+
+  GetChatsEvent(
+      {required this.currentUser, required this.countOfWillBeFetchedChatCount});
+}
+
+class AddStoryEvent extends UserViewModelEvent {
+  final String storyPhotoUrl;
+  final String userID;
+  final ValueChanged<bool> resultCallBack;
+
+  AddStoryEvent(
+      {required this.storyPhotoUrl,
+      required this.userID,
+      required this.resultCallBack});
+}
+
+class GetStoriesEvent extends UserViewModelEvent {
+  final String userID;
+  final int countOfWillBeFetchedStoryCount;
+
+  GetStoriesEvent(
+      {required this.userID, required this.countOfWillBeFetchedStoryCount});
+}
+
 class UpdateUserNameEvent extends UserViewModelEvent {
   final String userID;
   final String newUserName;
@@ -49,6 +76,22 @@ class UpdateUserNameEvent extends UserViewModelEvent {
     required this.newUserName,
     required this.resultCallBack,
   });
+}
+
+class UpdateUserPassEvent extends UserViewModelEvent {
+  final String userID;
+  final String newPass;
+
+  UpdateUserPassEvent({
+    required this.userID,
+    required this.newPass,
+  });
+}
+
+class DeleteUserEvent extends UserViewModelEvent {
+  final UserModel currentUser;
+
+  DeleteUserEvent({required this.currentUser});
 }
 
 class UpdateUserProfilePhotoEvent extends UserViewModelEvent {

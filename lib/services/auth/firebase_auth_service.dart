@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../bloc/user_view_model_bloc.dart';
 import '../../models/user_model.dart';
-import '../../pages/sign_pages/email_sign_page.dart';
 import 'auth_service_base.dart';
 
 class FirebaseAuthService implements AuthServiceBase {
@@ -88,7 +88,7 @@ class FirebaseAuthService implements AuthServiceBase {
       return UserModel(
           userID: userCredential.user!.uid, email: userCredential.user!.email!);
     } on FirebaseAuthException catch (e) {
-      EmailSignPage.errorCode = e.code.toLowerCase();
+      UserViewModelBloc.errorCode = e.code.toLowerCase();
       // ignore: avoid_print
       print('FIREBASE signInWithEmail SERVICE ERROR: $e');
       return null;
@@ -103,7 +103,7 @@ class FirebaseAuthService implements AuthServiceBase {
       return UserModel(
           userID: userCredential.user!.uid, email: userCredential.user!.email!);
     } on FirebaseAuthException catch (e) {
-      EmailSignPage.errorCode = e.code.toLowerCase();
+      UserViewModelBloc.errorCode = e.code.toLowerCase();
       // ignore: avoid_print
       print('FIREBASE signUpWithEmail SERVICE ERROR: ${e.code}');
       return null;

@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'user_model.dart';
@@ -6,7 +7,7 @@ class MessageModel {
   final String? messageID;
   final UserModel fromWho;
   final UserModel toWho;
-  final String message;
+  String message;
   final bool isFromMe;
   final Timestamp? createdAt;
 
@@ -38,11 +39,6 @@ class MessageModel {
 
   @override
   String toString() {
-    return message;
+    return 'MessageModel(messageID: $messageID, fromWho: $fromWho, toWho: $toWho, message: $message, isFromMe: $isFromMe, createdAt: $createdAt)';
   }
-
-  // @override
-  // String toString() {
-  //   return 'MessageModel(fromWho: $fromWho, toWho: $toWho, message: $message, isFromMe: $isFromMe, createdAt: $createdAt)';
-  // }
 }

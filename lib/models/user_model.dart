@@ -1,4 +1,6 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
@@ -54,11 +56,6 @@ class UserModel {
 
   @override
   String toString() {
-    return userName.toString();
+    return 'UserModel(userID: $userID, email: $email, userName: $userName, profilePhotoURL: $profilePhotoURL, createdAt: $createdAt, updatedAt: $updatedAt, level: $level)';
   }
-
-  // @override
-  // String toString() {
-  //   return 'UserModel(userID: $userID, email: $email, userName: $userName, profilePhotoURL: $profilePhotoURL, createdAt: $createdAt, updatedAt: $updatedAt, level: $level)';
-  // }
 }

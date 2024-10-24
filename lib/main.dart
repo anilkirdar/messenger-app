@@ -22,8 +22,12 @@ class MyApp extends StatelessWidget {
     return BlocProvider(
       create: (context) => UserViewModelBloc()..add(CurrentUserEvent()),
       child: MaterialApp(
-        title: 'Messenger App',
-        theme: ThemeData(primarySwatch: Colors.blue),
+        title: 'Chatrix',
+        // theme: ThemeData(
+        //   bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        //     selectedItemColor: Consts.primaryAppColor,
+        //   ),
+        // ),
         debugShowCheckedModeBanner: false,
         home: const LandingPage(),
       ),

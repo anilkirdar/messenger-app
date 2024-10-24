@@ -15,13 +15,15 @@ class UsersPage extends StatefulWidget {
 }
 
 class _UsersPageState extends State<UsersPage> {
-  final int countOfWillBeFetchedUserCount = 12;
-  final ScrollController _scrollController = ScrollController();
+  late int _countOfWillBeFetchedUserCount;
+  late ScrollController _scrollController;
   late bool _hasMore;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
+    _countOfWillBeFetchedUserCount = 15;
     _hasMore = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       initStateMethods();
@@ -37,6 +39,7 @@ class _UsersPageState extends State<UsersPage> {
   @override
   Widget build(BuildContext context) {
     final userViewModelBloc = context.watch<UserViewModelBloc>();
+    Size size = MediaQuery.of(context).size;
 
     return Scaffold(
       appBar: AppBar(
@@ -115,7 +118,7 @@ class _UsersPageState extends State<UsersPage> {
                       children: [
                         FaIcon(
                           FontAwesomeIcons.personCircleQuestion,
-                          size: MediaQuery.of(context).size.height / 15,
+                          size: size.height / 15,
                           color: Colors.black54,
                         ),
                         const SizedBox(height: 10),
@@ -123,7 +126,7 @@ class _UsersPageState extends State<UsersPage> {
                           'No users found!',
                           style: TextStyle(
                             color: Colors.black54,
-                            fontSize: MediaQuery.of(context).size.height / 50,
+                            fontSize: size.height / 50,
                           ),
                         ),
                       ],
@@ -140,8 +143,7 @@ class _UsersPageState extends State<UsersPage> {
     _scrollController.addListener(
       () {
         if (_scrollController.offset >=
-                _scrollController.position.maxScrollExtent -
-                    MediaQuery.of(context).size.height / 10 &&
+                _scrollController.position.maxScrollExtent &&
             !_scrollController.position.outOfRange) {
           getUserList(user: userViewModelBloc.userList!.last);
         }
@@ -155,7 +157,7 @@ class _UsersPageState extends State<UsersPage> {
     userViewModelBloc.add(
       GetUsersEvent(
         user: user ?? userViewModelBloc.user!,
-        countOfWillBeFetchedUserCount: countOfWillBeFetchedUserCount,
+        countOfWillBeFetchedUserCount: _countOfWillBeFetchedUserCount,
       ),
     );
   }

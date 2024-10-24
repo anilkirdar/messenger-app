@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import '../locator.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
+import '../models/story_model.dart';
 import '../models/user_model.dart';
 import '../services/auth/fake_auth_service.dart';
 import '../services/auth/firebase_auth_service.dart';
@@ -47,6 +48,34 @@ class UserRepository {
     }
   }
 
+  Future<void> addStory(
+      {required String storyPhotoUrl, required String userID, required ValueChanged<bool> resultCallBack}) async {
+    if (_appMode == AppMode.debug) {
+      return;
+    } else {
+      await _firestoreService.addStory(
+        storyPhotoUrl: storyPhotoUrl,
+        userID: userID,
+        resultCallBack: resultCallBack,
+      );
+    }
+  }
+
+  Future<List<StoryModel>> getStories(
+      {required String userID,
+      required int countOfWillBeFetchedStoryCount,
+      required UserModel currentUser}) async {
+    if (_appMode == AppMode.debug) {
+      return [];
+    } else {
+      return await _firestoreService.getStories(
+        userID: userID,
+        countOfWillBeFetchedStoryCount: countOfWillBeFetchedStoryCount,
+        currentUser: currentUser,
+      );
+    }
+  }
+
   Future<bool> saveChatMessage(
       {required MessageModel message,
       required ValueChanged<bool> resultCallBack}) async {
@@ -70,6 +99,26 @@ class UserRepository {
         newUserName: newUserName,
         resultCallBack: resultCallBack,
       );
+    }
+  }
+
+  Future<void> updateUserPass(
+      {required String userID, required String newPass}) async {
+    if (_appMode == AppMode.debug) {
+      return;
+    } else {
+      await _firestoreService.updateUserPass(
+        userID: userID,
+        newPass: newPass,
+      );
+    }
+  }
+
+  Future<bool> deleteUser({required UserModel currentUser}) async {
+    if (_appMode == AppMode.debug) {
+      return true;
+    } else {
+      return await _firestoreService.deleteUser(currentUser: currentUser);
     }
   }
 
@@ -107,21 +156,6 @@ class UserRepository {
     }
   }
 
-  // void activateMessageListener(
-  //     {required String currentUserID,
-  //     required String otherUserID,
-  //     required BuildContext context}) {
-  //   if (_appMode == AppMode.debug) {
-  //     return;
-  //   } else {
-  //     return _firestoreService.activateMessageListener(
-  //       currentUserID: currentUserID,
-  //       otherUserID: otherUserID,
-  //       context: context,
-  //     );
-  //   }
-  // }
-
   Stream<List<MessageModel?>> messageListener(
       {required String currentUserID,
       required String otherUserID,
@@ -136,11 +170,16 @@ class UserRepository {
     }
   }
 
-  Future<List<ChatModel>> getChats({required UserModel currentUser}) async {
+  Future<Stream<List<ChatModel>>> getChats(
+      {required UserModel currentUser,
+      required int countOfWillBeFetchedChatCount}) async {
     if (_appMode == AppMode.debug) {
-      return [];
+      return Stream.empty();
     } else {
-      return _firestoreService.getChats(currentUser: currentUser);
+      return _firestoreService.getChats(
+        currentUser: currentUser,
+        countOfWillBeFetchedChatCount: countOfWillBeFetchedChatCount,
+      );
     }
   }
 

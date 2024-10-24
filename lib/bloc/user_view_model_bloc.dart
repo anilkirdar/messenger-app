@@ -5,7 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../locator.dart';
 import '../../models/user_model.dart';
 import '../../repository/user_repository.dart';
+import '../models/chat_model.dart';
 import '../models/message_model.dart';
+import '../models/story_model.dart';
 
 part 'user_view_model_event.dart';
 part 'user_view_model_state.dart';
@@ -13,10 +15,15 @@ part 'user_view_model_state.dart';
 class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
   final UserRepository _userRepository = locator<UserRepository>();
   List<UserModel>? userList;
+  List<StoryModel>? storyList;
   List<MessageModel>? messageList;
+  Stream<List<ChatModel>>? chatListStream;
   UserModel? user;
+  static String? errorCode;
   String? emailErrorMessage;
   String? passErrorMessage;
+  String? bothErrorMessage;
+  String? generalErrorMessage;
 
   UserViewModelBloc() : super(UserViewModelIdleState()) {
     bool checkUserEmailAndPassword(
@@ -49,14 +56,28 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
     });
 
     on<CurrentUserEvent>((event, emit) async {
+      user = null;
+      userList = null;
+      storyList = null;
+      messageList = null;
+      chatListStream = null;
       emit(UserViewModelBusyState());
       user = await _userRepository.currentUser();
+      emit(UserViewModelIdleState());
+    });
+
+    on<GetChatsEvent>((event, emit) async {
+      chatListStream = await _userRepository.getChats(
+        currentUser: event.currentUser,
+        countOfWillBeFetchedChatCount: event.countOfWillBeFetchedChatCount,
+      );
       emit(UserViewModelIdleState());
     });
 
     on<SaveChatMessageEvent>((event, emit) async {
       await _userRepository.saveChatMessage(
           message: event.message, resultCallBack: event.resultCallBack);
+      emit(UserViewModelIdleState());
     });
 
     on<GetUsersEvent>((event, emit) async {
@@ -65,6 +86,15 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
         user: event.user,
         countOfWillBeFetchedUserCount: event.countOfWillBeFetchedUserCount,
       );
+      emit(UserViewModelIdleState());
+    });
+
+    on<GetStoriesEvent>((event, emit) async {
+      emit(UserViewModelUserDBBusyState());
+      storyList = await _userRepository.getStories(
+          userID: event.userID,
+          countOfWillBeFetchedStoryCount: event.countOfWillBeFetchedStoryCount,
+          currentUser: user!);
       emit(UserViewModelIdleState());
     });
 
@@ -82,15 +112,14 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
         isInitFunction: event.isInitFunction,
       );
 
-      // if (event.isInitFunction) {
-      //   _userRepository.activateMessageListener(
-      //     currentUserID: event.currentUserID,
-      //     otherUserID: event.otherUserID,
-      //     // ignore: use_build_context_synchronously
-      //     context: event.context,
-      //   );
-      // }
+      emit(UserViewModelIdleState());
+    });
 
+    on<AddStoryEvent>((event, emit) async {
+      await _userRepository.addStory(
+          storyPhotoUrl: event.storyPhotoUrl,
+          userID: event.userID,
+          resultCallBack: event.resultCallBack);
       emit(UserViewModelIdleState());
     });
 
@@ -103,6 +132,21 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
       if (result!) {
         user!.userName = event.newUserName;
       }
+      emit(UserViewModelIdleState());
+    });
+
+    on<UpdateUserPassEvent>((event, emit) async {
+      await _userRepository.updateUserPass(
+          userID: event.userID, newPass: event.newPass);
+      emit(UserViewModelIdleState());
+    });
+
+    on<DeleteUserEvent>((event, emit) async {
+      bool result = await _userRepository.deleteUser(currentUser: event.currentUser);
+      if (result) {
+        user = null;
+      }
+      emit(UserViewModelIdleState());
     });
 
     on<UpdateUserProfilePhotoEvent>((event, emit) async {
@@ -121,7 +165,6 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
     });
 
     on<SignOutEvent>((event, emit) {
-      emit(UserViewModelBusyState());
       _userRepository.signOut();
       user = null;
       emit(UserViewModelIdleState());
