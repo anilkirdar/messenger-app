@@ -61,13 +61,14 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
       storyList = null;
       messageList = null;
       chatListStream = null;
+      _userRepository.setNull();
       emit(UserViewModelBusyState());
       user = await _userRepository.currentUser();
       emit(UserViewModelIdleState());
     });
 
     on<GetChatsEvent>((event, emit) async {
-      chatListStream = await _userRepository.getChats(
+      chatListStream = await _userRepository.getChatListStream(
         currentUser: event.currentUser,
         countOfWillBeFetchedChatCount: event.countOfWillBeFetchedChatCount,
       );
@@ -76,7 +77,10 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
 
     on<SaveChatMessageEvent>((event, emit) async {
       await _userRepository.saveChatMessage(
-          message: event.message, resultCallBack: event.resultCallBack);
+          message: event.message,
+          resultCallBack: event.resultCallBack,
+          currentUserID: user!.userID);
+
       emit(UserViewModelIdleState());
     });
 
@@ -85,11 +89,29 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
       userList = await _userRepository.getUsers(
         user: event.user,
         countOfWillBeFetchedUserCount: event.countOfWillBeFetchedUserCount,
+        currentUser: user!,
       );
       emit(UserViewModelIdleState());
     });
 
     on<GetStoriesEvent>((event, emit) async {
+      if (event.isInitFunction) {
+        _userRepository
+            .currentUserStoryListener(currentUserID: user!.userID)
+            .listen(
+          (storyDetailsListFromStream) {
+            if (storyDetailsListFromStream != null && storyList != null) {
+              for (var story in storyList!) {
+                if (story.user.userID == user!.userID) {
+                  story.storyDetailsList = storyDetailsListFromStream;
+                }
+              }
+            }
+          },
+          onError: (error) =>
+              debugPrint("currentUserStoryListener ERROR: $error"),
+        );
+      }
       emit(UserViewModelUserDBBusyState());
       storyList = await _userRepository.getStories(
           userID: event.userID,
@@ -100,7 +122,20 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
 
     on<GetMessagesEvent>((event, emit) async {
       if (event.isInitFunction) {
-        messageList = null;
+        _userRepository
+            .messageListener(
+                currentUserID: event.currentUserID,
+                otherUserID: event.otherUserID)
+            .listen(
+          (messageListFromStream) {
+            if (messageListFromStream.isNotEmpty) {
+              if (messageListFromStream[0] != null && messageList != null) {
+                messageList!.insert(0, messageListFromStream[0]!);
+              }
+            }
+          },
+          onError: (error) => debugPrint("messageListener ERROR: $error"),
+        );
       }
       emit(UserViewModelMessageDBBusyState());
       messageList = await _userRepository.getMessages(
@@ -117,9 +152,8 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
 
     on<AddStoryEvent>((event, emit) async {
       await _userRepository.addStory(
-          storyPhotoUrl: event.storyPhotoUrl,
-          userID: event.userID,
-          resultCallBack: event.resultCallBack);
+          newStoryPhoto: event.newStoryPhoto,
+          userID: event.userID);
       emit(UserViewModelIdleState());
     });
 
@@ -142,8 +176,9 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
     });
 
     on<DeleteUserEvent>((event, emit) async {
-      bool result = await _userRepository.deleteUser(currentUser: event.currentUser);
-      if (result) {
+      bool result1 =
+          await _userRepository.deleteUser(currentUser: event.currentUser);
+      if (result1) {
         user = null;
       }
       emit(UserViewModelIdleState());
@@ -151,9 +186,7 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
 
     on<UpdateUserProfilePhotoEvent>((event, emit) async {
       String? url = await _userRepository.updateUserProfilePhoto(
-          userID: event.userID,
-          fileType: event.fileType,
-          newProfilePhoto: event.newProfilePhoto!);
+          userID: event.userID, newProfilePhoto: event.newProfilePhoto!);
 
       user!.profilePhotoURL = url;
     });
@@ -172,6 +205,11 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
 
     on<SignWithGoogleEvent>((event, emit) async {
       try {
+        user = null;
+        userList = null;
+        storyList = null;
+        messageList = null;
+        chatListStream = null;
         emit(UserViewModelBusyState());
         user = await _userRepository.signWithGoogle();
         emit(UserViewModelIdleState());
@@ -181,6 +219,11 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
     });
 
     on<SignInWithEmailEvent>((event, emit) async {
+      user = null;
+      userList = null;
+      storyList = null;
+      messageList = null;
+      chatListStream = null;
       emit(UserViewModelBusyState());
       user = await _userRepository.signInWithEmail(event.email, event.pass);
       if (user != null) {
@@ -191,6 +234,12 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
     });
 
     on<SignUpWithEmailEvent>((event, emit) async {
+      user = null;
+      userList = null;
+      storyList = null;
+      messageList = null;
+      chatListStream = null;
+
       if (checkUserEmailAndPassword(email: event.email, pass: event.pass)) {
         emit(UserViewModelBusyState());
         user = await _userRepository.signUpWithEmail(

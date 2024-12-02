@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -5,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../bloc/user_view_model_bloc.dart';
 import '../../consts/consts.dart';
+import '../story_detail_card_widget.dart';
+import '../story_detail_page_with_pl.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -27,8 +30,9 @@ class _HomePageState extends State<HomePage> {
     _countOfWillBeFetchedStoryCount = 10;
     _hasMore = true;
     _picker = ImagePicker();
+    getStories(isInitFunction: true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      initStateMethods();
+      setupScrollController();
     });
   }
 
@@ -42,7 +46,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final userViewModelBloc = context.watch<UserViewModelBloc>();
     Size size = MediaQuery.of(context).size;
-
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -52,7 +56,8 @@ class _HomePageState extends State<HomePage> {
       ),
       body: SafeArea(
         child: userViewModelBloc.storyList == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(
+                child: CircularProgressIndicator(color: Consts.inactiveColor))
             : userViewModelBloc.storyList!.isNotEmpty
                 ? SizedBox(
                     height: size.height,
@@ -61,11 +66,12 @@ class _HomePageState extends State<HomePage> {
                       scrollDirection: Axis.vertical,
                       child: Column(
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: SizedBox(
-                              width: size.width,
-                              height: size.height / 12,
+                          SizedBox(
+                            width: size.width,
+                            height: size.height / 12,
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
                               child: ListView.builder(
                                 controller: _scrollController,
                                 scrollDirection: Axis.horizontal,
@@ -82,8 +88,7 @@ class _HomePageState extends State<HomePage> {
                                         child: Align(
                                           widthFactor: 1,
                                           child: CircularProgressIndicator(
-                                            color: Colors.black54,
-                                          ),
+                                              color: Consts.inactiveColor),
                                         ),
                                       );
                                     } else {
@@ -92,12 +97,42 @@ class _HomePageState extends State<HomePage> {
                                     }
                                   } else {
                                     if (index == 0) {
-                                      if (userViewModelBloc.storyList![0]
-                                          .storyPhotoUrlList!.isNotEmpty) {}
                                       return Padding(
                                         padding:
                                             const EdgeInsets.only(right: 10),
                                         child: GestureDetector(
+                                          onTap: () {
+                                            if (userViewModelBloc
+                                                .storyList![index]
+                                                .storyDetailsList!
+                                                .isNotEmpty) {
+                                              Navigator.of(context,
+                                                      rootNavigator: true)
+                                                  .push(
+                                                MaterialPageRoute(
+                                                  builder: (
+                                                    context,
+                                                  ) =>
+                                                      StoryDetailPageWithPl(
+                                                    currentStoryIndex:
+                                                        userViewModelBloc
+                                                                .storyList![0]
+                                                                .storyDetailsList!
+                                                                .isNotEmpty
+                                                            ? index
+                                                            : index - 1,
+                                                    storyList: userViewModelBloc
+                                                        .storyList!,
+                                                  ),
+                                                ),
+                                              )
+                                                  .then(
+                                                (value) {
+                                                  setState(() {});
+                                                },
+                                              );
+                                            }
+                                          },
                                           child: Stack(
                                             alignment: Alignment.bottomRight,
                                             children: [
@@ -105,15 +140,16 @@ class _HomePageState extends State<HomePage> {
                                                 radius: (size.height / 26) + 3,
                                                 backgroundColor:
                                                     userViewModelBloc
-                                                            .storyList![0]
-                                                            .storyPhotoUrlList!
+                                                            .storyList![index]
+                                                            .storyDetailsList!
                                                             .isNotEmpty
                                                         ? Consts
                                                             .tertiaryAppColor
                                                         : Colors.transparent,
                                                 child: CircleAvatar(
                                                   radius: size.height / 26,
-                                                  backgroundImage: NetworkImage(
+                                                  backgroundImage:
+                                                      CachedNetworkImageProvider(
                                                     userViewModelBloc
                                                         .user!.profilePhotoURL!,
                                                   ),
@@ -160,25 +196,14 @@ class _HomePageState extends State<HomePage> {
                                                           null) {
                                                         userViewModelBloc.add(
                                                           AddStoryEvent(
-                                                            storyPhotoUrl:
-                                                                _newPickedImage!
-                                                                    .path,
+                                                            newStoryPhoto:
+                                                                _newPickedImage!,
                                                             userID:
                                                                 userViewModelBloc
                                                                     .storyList![
                                                                         index]
+                                                                    .user
                                                                     .userID,
-                                                            resultCallBack:
-                                                                (result) {
-                                                              if (result) {
-                                                                userViewModelBloc
-                                                                    .storyList![
-                                                                        index]
-                                                                    .storyPhotoUrlList!
-                                                                    .add(_newPickedImage!
-                                                                        .path);
-                                                              }
-                                                            },
                                                           ),
                                                         );
                                                       }
@@ -191,6 +216,7 @@ class _HomePageState extends State<HomePage> {
                                                       Consts.tertiaryAppColor,
                                                   child: FaIcon(
                                                     FontAwesomeIcons.plus,
+                                                    color: Colors.black87,
                                                     size: 14,
                                                   ),
                                                 ),
@@ -204,17 +230,48 @@ class _HomePageState extends State<HomePage> {
                                         padding:
                                             const EdgeInsets.only(right: 10),
                                         child: GestureDetector(
-                                          onTap: () {},
+                                          onTap: () {
+                                            Navigator.of(context,
+                                                    rootNavigator: true)
+                                                .push(
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    StoryDetailPageWithPl(
+                                                  currentStoryIndex:
+                                                      userViewModelBloc
+                                                              .storyList![0]
+                                                              .storyDetailsList!
+                                                              .isNotEmpty
+                                                          ? index
+                                                          : index - 1,
+                                                  storyList: userViewModelBloc
+                                                      .storyList!,
+                                                ),
+                                              ),
+                                            )
+                                                .then(
+                                              (value) {
+                                                setState(() {});
+                                              },
+                                            );
+                                          },
                                           child: CircleAvatar(
                                             radius: (size.height / 28) + 3,
-                                            backgroundColor:
-                                                Consts.tertiaryAppColor,
+                                            backgroundColor: userViewModelBloc
+                                                    .storyList![index]
+                                                    .listOfUsersHaveSeen!
+                                                    .contains(userViewModelBloc
+                                                        .user!.userID)
+                                                ? Consts.inactiveColor
+                                                : Consts.tertiaryAppColor,
                                             child: CircleAvatar(
                                               radius: size.height / 28,
-                                              backgroundImage: NetworkImage(
+                                              backgroundImage:
+                                                  CachedNetworkImageProvider(
                                                 userViewModelBloc
                                                     .storyList![index]
-                                                    .profilePhotoURL,
+                                                    .user
+                                                    .profilePhotoURL!,
                                               ),
                                             ),
                                           ),
@@ -226,101 +283,61 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
+                          SizedBox(height: 10),
+                          SizedBox(
+                            width: size.width,
+                            height: size.height - (size.height / 12),
+                            child: userViewModelBloc.storyList!.isNotEmpty
+                                ? ListView.builder(
+                                    itemCount:
+                                        userViewModelBloc.storyList!.length,
+                                    scrollDirection: Axis.vertical,
+                                    itemBuilder: (context, index) {
+                                      if (userViewModelBloc.storyList![index]
+                                          .storyDetailsList!.isNotEmpty) {
+                                        return StoryDetailCardWidget(
+                                            story: userViewModelBloc
+                                                .storyList![index]);
+                                      } else {
+                                        return SizedBox();
+                                      }
+                                    },
+                                  )
+                                : SizedBox(),
+                          ),
                         ],
                       ),
                     ),
                   )
-                : Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        FaIcon(
-                          FontAwesomeIcons.personCircleQuestion,
-                          size: size.height / 15,
-                          color: Colors.black54,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'No users found!',
-                          style: TextStyle(
-                            color: Colors.black54,
-                            fontSize: size.height / 50,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                : SizedBox(),
       ),
-
-      // body: SizedBox(
-      //   height: size.height,
-      //   width: size.width,
-      //   child: SingleChildScrollView(
-      //     scrollDirection: Axis.vertical,
-      //     child: Column(
-      //       children: [
-      //         SingleChildScrollView(
-      //           scrollDirection: Axis.horizontal,
-      //           child: Row(
-      //             children: [
-      //               CircleAvatar(
-      //                 backgroundImage: NetworkImage(
-      //                   userViewModelBloc.user!.profilePhotoURL!,
-      //                 ),
-      //               ),
-      //               Container(
-      //                 color: Colors.blue,
-      //                 width: size.width,
-      //                 height: 30,
-      //               ),
-      //               Container(
-      //                 color: Colors.red,
-      //                 width: size.width,
-      //                 height: 30,
-      //               ),
-      //               Container(
-      //                 color: Colors.green,
-      //                 width: size.width,
-      //                 height: 30,
-      //               ),
-      //             ],
-      //           ),
-      //         ),
-      //         Container(
-      //           color: Colors.yellow,
-      //           width: size.width,
-      //           height: 30,
-      //         ),
-      //       ],
-      //     ),
-      //   ),
-      // ),
     );
   }
 
-  void initStateMethods() {
+  void setupScrollController() {
     UserViewModelBloc userViewModelBloc = context.read<UserViewModelBloc>();
 
-    getStories();
     _scrollController.addListener(
       () {
-        if (_scrollController.offset >=
-                _scrollController.position.maxScrollExtent &&
-            !_scrollController.position.outOfRange) {
-          getStories(userID: userViewModelBloc.storyList!.last.userID);
+        if (_scrollController.positions.isNotEmpty) {
+          if (_scrollController.offset >=
+                  _scrollController.position.maxScrollExtent &&
+              !_scrollController.position.outOfRange) {
+            getStories(userID: userViewModelBloc.storyList!.last.user.userID);
+          }
         }
       },
     );
   }
 
-  void getStories({String? userID}) async {
+  void getStories({String? userID, bool isInitFunction = false}) async {
     UserViewModelBloc userViewModelBloc = context.read<UserViewModelBloc>();
 
     userViewModelBloc.add(
       GetStoriesEvent(
         userID: userID ?? userViewModelBloc.user!.userID,
         countOfWillBeFetchedStoryCount: _countOfWillBeFetchedStoryCount,
+        isInitFunction: isInitFunction,
       ),
     );
   }

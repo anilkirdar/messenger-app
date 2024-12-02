@@ -33,6 +33,7 @@ class SignPageInputWidget extends StatelessWidget {
         SizedBox(height: 5),
         TextFormField(
           keyboardType: keyboardType,
+          cursorColor: Colors.black87,
           onChanged: onChanged,
           initialValue: initialValue,
           obscureText: obscureText,
@@ -41,6 +42,9 @@ class SignPageInputWidget extends StatelessWidget {
             contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(color: Colors.grey.shade400),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.black87),
             ),
             border: OutlineInputBorder(
               borderSide: BorderSide(color: Colors.grey.shade400),

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -5,10 +6,15 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../models/user_model.dart';
 import '../profile_settings_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   final UserModel user;
   const ProfilePage({super.key, required this.user});
 
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -16,7 +22,7 @@ class ProfilePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          user.userName!,
+          widget.user.userName!,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
         ),
         actions: [
@@ -27,7 +33,14 @@ class ProfilePage extends StatelessWidget {
                 Navigator.of(context, rootNavigator: true)
                     .push(CupertinoPageRoute(
                   builder: (context) => ProfileSettingsPage(),
-                ));
+                ))
+                    .then(
+                  (value) {
+                    if (value) {
+                      setState(() {});
+                    }
+                  },
+                );
               },
               icon: FaIcon(FontAwesomeIcons.gripLines),
             ),
@@ -160,7 +173,8 @@ class ProfilePage extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: size.width / 10,
-                backgroundImage: NetworkImage(user.profilePhotoURL!),
+                backgroundImage:
+                    CachedNetworkImageProvider(widget.user.profilePhotoURL!),
               ),
               SizedBox(height: 5),
             ],

@@ -1,40 +1,31 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'user_model.dart';
 
 class StoryModel {
-  final String userID;
-  final String userName;
-  final String profilePhotoURL;
-  final List? storyPhotoUrlList;
-  final Timestamp? createdAt;
+  final UserModel user;
+  List? storyDetailsList;
+  List? listOfUsersHaveSeen;
 
   StoryModel({
-    required this.userID,
-    required this.userName,
-    required this.profilePhotoURL,
-    this.storyPhotoUrlList,
-    this.createdAt,
+    required this.user,
+    this.storyDetailsList,
+    this.listOfUsersHaveSeen,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'userID': userID,
-      'userName': userName,
-      'profilePhotoURL': profilePhotoURL,
-      'storyPhotoUrlList': storyPhotoUrlList ?? [],
-      'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+      'user': user.toMap(),
+      'storyDetailsList': storyDetailsList ?? [],
+      'listOfUsersHaveSeen': listOfUsersHaveSeen ?? [],
     };
   }
 
   StoryModel.fromMap(Map<String, dynamic> map)
-      : userID = map['userID'],
-        userName = map['userName'],
-        profilePhotoURL = map['profilePhotoURL'],
-        storyPhotoUrlList = map['storyPhotoUrlList'],
-        createdAt = map['createdAt'];
+      : user = UserModel.fromMap(map['user']),
+        listOfUsersHaveSeen = map['listOfUsersHaveSeen'],
+        storyDetailsList = map['storyDetailsList'];
 
   @override
   String toString() {
-    return 'StoryModel(userName: $userName)';
+    return 'StoryModel(userName: ${user.userName}, storyDetailsList: $storyDetailsList)';
   }
 }

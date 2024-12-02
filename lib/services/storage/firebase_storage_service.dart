@@ -11,12 +11,16 @@ class FirebaseStorageService implements StorageServiceBase {
   String? _url;
 
   @override
-  Future<String?> uploadFile(String userID, String fileType, XFile file) async {
+  Future<String?> uploadFile(
+      {required String userID,
+      required String fileType,
+      required XFile file,
+      required String fileName}) async {
     _storageReference = _firebaseStorage
         .ref()
         .child(userID)
         .child(fileType)
-        .child('profile-photo.png');
+        .child(fileName);
 
     await _storageReference!.putFile(File(file.path)).whenComplete(
       () async {

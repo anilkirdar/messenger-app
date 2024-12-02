@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'bloc/user_view_model_bloc.dart';
+import 'consts/consts.dart';
 import 'firebase_options.dart';
 import 'locator.dart';
 import 'pages/landing_page.dart';
@@ -24,10 +25,24 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Chatrix',
         // theme: ThemeData(
-        //   bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        //     selectedItemColor: Consts.primaryAppColor,
+        //   colorScheme: ColorScheme(
+        //     primary: Colors.black87,
+        //     secondary: Consts.secondaryAppColor,
+        //     surface: Colors.white,
+        //     error: Colors.red,
+        //     onPrimary: Colors.red,
+        //     onSecondary: Colors.deepOrange,
+        //     onSurface: Colors.black87,
+        //     onError: Colors.redAccent,
+        //     brightness: Brightness.light,
         //   ),
         // ),
+        theme: ThemeData(
+          textSelectionTheme: TextSelectionThemeData(
+            cursorColor: Consts.primaryAppColor,
+            selectionHandleColor: Consts.primaryAppColor,
+          ),
+        ),
         debugShowCheckedModeBanner: false,
         home: const LandingPage(),
       ),

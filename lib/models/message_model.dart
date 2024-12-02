@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'user_model.dart';
@@ -10,13 +9,15 @@ class MessageModel {
   String message;
   final bool isFromMe;
   final Timestamp? createdAt;
+  final bool itBeenSeen;
 
   MessageModel(
       {this.messageID,
       required this.fromWho,
       required this.toWho,
       required this.message,
-      required this.isFromMe,
+      this.itBeenSeen = false,
+      this.isFromMe = true,
       this.createdAt});
 
   Map<String, dynamic> toMap() {
@@ -25,7 +26,8 @@ class MessageModel {
       'toWho': toWho.toMap(),
       'message': message,
       'isFromMe': isFromMe,
-      'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+      'createdAt': createdAt,
+      'itBeenSeen': itBeenSeen,
     };
   }
 
@@ -35,10 +37,11 @@ class MessageModel {
         toWho = UserModel.fromMap(map['toWho']),
         message = map['message'],
         isFromMe = map['isFromMe'],
+        itBeenSeen = map['itBeenSeen'],
         createdAt = map['createdAt'];
 
   @override
   String toString() {
-    return 'MessageModel(messageID: $messageID, fromWho: $fromWho, toWho: $toWho, message: $message, isFromMe: $isFromMe, createdAt: $createdAt)';
+    return 'MessageModel(message: $message, createdAt: $createdAt)';
   }
 }

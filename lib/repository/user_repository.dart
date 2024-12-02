@@ -21,6 +21,14 @@ class UserRepository {
   final FirebaseStorageService _firebaseStorageService =
       locator<FirebaseStorageService>();
 
+  void setNull() {
+    if (_appMode == AppMode.debug) {
+      return;
+    } else {
+      return _firestoreService.setNull();
+    }
+  }
+
   Future<UserModel?> currentUser() async {
     if (_appMode == AppMode.debug) {
       return await _fakeAuthService.currentUser();
@@ -35,13 +43,16 @@ class UserRepository {
     }
   }
 
-  Future<List<UserModel>> getUsers(
-      {required UserModel user,
-      required int countOfWillBeFetchedUserCount}) async {
+  Future<List<UserModel>> getUsers({
+    required UserModel user,
+    required int countOfWillBeFetchedUserCount,
+    required UserModel currentUser,
+  }) async {
     if (_appMode == AppMode.debug) {
       return [];
     } else {
       return await _firestoreService.getUsers(
+        currentUser: currentUser,
         user: user,
         countOfWillBeFetchedUserCount: countOfWillBeFetchedUserCount,
       );
@@ -49,14 +60,21 @@ class UserRepository {
   }
 
   Future<void> addStory(
-      {required String storyPhotoUrl, required String userID, required ValueChanged<bool> resultCallBack}) async {
+      {required String userID,
+      required XFile newStoryPhoto}) async {
     if (_appMode == AppMode.debug) {
       return;
     } else {
+      String? storyPhotoUrl = await _firebaseStorageService.uploadFile(
+        userID: userID,
+        fileType: 'story-photos',
+        file: newStoryPhoto,
+        fileName: newStoryPhoto.name,
+      );
+
       await _firestoreService.addStory(
         storyPhotoUrl: storyPhotoUrl,
         userID: userID,
-        resultCallBack: resultCallBack,
       );
     }
   }
@@ -76,14 +94,17 @@ class UserRepository {
     }
   }
 
-  Future<bool> saveChatMessage(
+  Future<bool?> saveChatMessage(
       {required MessageModel message,
+      required String currentUserID,
       required ValueChanged<bool> resultCallBack}) async {
     if (_appMode == AppMode.debug) {
-      return false;
+      return null;
     } else {
       return await _firestoreService.saveChatMessage(
-          message: message, resultCallBack: resultCallBack);
+          message: message,
+          resultCallBack: resultCallBack,
+          currentUserID: currentUserID);
     }
   }
 
@@ -123,14 +144,16 @@ class UserRepository {
   }
 
   Future<String?> updateUserProfilePhoto(
-      {required String userID,
-      required String fileType,
-      required XFile? newProfilePhoto}) async {
+      {required String userID, required XFile? newProfilePhoto}) async {
     if (_appMode == AppMode.debug) {
       return 'profile-photo-url';
     } else {
       String? newProfilePhotoURL = await _firebaseStorageService.uploadFile(
-          userID, fileType, newProfilePhoto!);
+        userID: userID,
+        fileType: 'profile-photo',
+        fileName: 'profile-photo.png',
+        file: newProfilePhoto!,
+      );
       await _firestoreService.updateUserProfilePhoto(
           userID: userID, newProfilePhotoURL: newProfilePhotoURL);
 
@@ -157,9 +180,7 @@ class UserRepository {
   }
 
   Stream<List<MessageModel?>> messageListener(
-      {required String currentUserID,
-      required String otherUserID,
-      required BuildContext context}) {
+      {required String currentUserID, required String otherUserID}) {
     if (_appMode == AppMode.debug) {
       return const Stream.empty();
     } else {
@@ -170,13 +191,22 @@ class UserRepository {
     }
   }
 
-  Future<Stream<List<ChatModel>>> getChats(
+  Stream<dynamic> currentUserStoryListener({required String currentUserID}) {
+    if (_appMode == AppMode.debug) {
+      return const Stream.empty();
+    } else {
+      return _firestoreService.currentUserStoryListener(
+          currentUserID: currentUserID);
+    }
+  }
+
+  Future<Stream<List<ChatModel>>> getChatListStream(
       {required UserModel currentUser,
       required int countOfWillBeFetchedChatCount}) async {
     if (_appMode == AppMode.debug) {
       return Stream.empty();
     } else {
-      return _firestoreService.getChats(
+      return _firestoreService.getChatListStream(
         currentUser: currentUser,
         countOfWillBeFetchedChatCount: countOfWillBeFetchedChatCount,
       );
@@ -222,7 +252,12 @@ class UserRepository {
           await _firebaseAuthService.signInWithEmail(email, password);
 
       if (user != null) {
-        return await _firestoreService.readUser(user.userID);
+        UserModel willReturnUser =
+            await _firestoreService.readUser(user.userID);
+
+        await _firestoreService.addDefaultStorySettingsToUser(user: willReturnUser);
+
+        return willReturnUser;
       } else {
         return null;
       }
@@ -238,7 +273,12 @@ class UserRepository {
       bool result = await _firestoreService.saveUser(user);
 
       if (result) {
-        return await _firestoreService.readUser(user!.userID);
+        UserModel willReturnUser =
+            await _firestoreService.readUser(user!.userID);
+
+        await _firestoreService.addDefaultStorySettingsToUser(user: willReturnUser);
+
+        return willReturnUser;
       } else {
         return null;
       }

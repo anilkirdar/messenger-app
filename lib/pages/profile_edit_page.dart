@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -109,7 +110,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                             backgroundColor: Colors.white,
                             backgroundImage: _newPickedImage != null
                                 ? FileImage(File(_newPickedImage!.path))
-                                : NetworkImage(
+                                : CachedNetworkImageProvider(
                                     userViewModelBloc.user!.profilePhotoURL!),
                           ),
                         ),
@@ -500,7 +501,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         userViewModelBloc.add(
           UpdateUserProfilePhotoEvent(
             userID: userViewModelBloc.user!.userID,
-            fileType: 'profile-photo',
             newProfilePhoto: _newPickedImage,
           ),
         );

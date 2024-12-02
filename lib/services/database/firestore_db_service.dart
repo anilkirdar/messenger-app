@@ -1,67 +1,71 @@
 // ignore_for_file: avoid_print
-
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:encrypt/encrypt.dart';
+// import 'package:encrypt/encrypt.dart' as encrypt;
+// import 'package:encrypt/encrypt.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import '../../locator.dart';
 import '../../models/chat_model.dart';
 import '../../models/message_model.dart';
 import '../../models/story_model.dart';
 import '../../models/user_model.dart';
-import '../auth/firebase_auth_service.dart';
 import 'firestore_db_service_base.dart';
 
 class FirestoreDBService implements FirestoreDBServiceBase {
   final FirebaseFirestore _firestoreDB = FirebaseFirestore.instance;
-  final FirebaseAuthService _firebaseAuthService =
-      locator.get<FirebaseAuthService>();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   List<UserModel>? userList;
   List<StoryModel>? storyList;
   List<MessageModel>? messageList;
-  final key = encrypt.Key.fromBase64('asjkdhjashdkjashdkhasjdasjkdaskj');
-  final iv = IV.fromLength(16);
+  // final encrypt.Key key = encrypt.Key.fromUtf8('jjd3PwXGErrybXhgRo4LAg==');
+  // final encrypt.IV iv = encrypt.IV.fromLength(16);
+  Codec<String, String> stringToBase64 = utf8.fuse(base64);
 
-  int randomNumCreator() {
-    int randomInt = Random().nextInt(99999);
-    return randomInt;
+  @override
+  void setNull() {
+    userList = null;
+    storyList = null;
+    messageList = null;
   }
 
   @override
   Future<bool> saveUser(UserModel? user) async {
     try {
+      setNull();
+
       if (user != null) {
-        await _firestoreDB
-            .collection('users')
-            .doc(user.userID)
-            .set(user.toMap());
+        Map<String, dynamic> userMap = user.toMap();
 
-        StoryModel story = StoryModel(
-          userID: user.userID,
-          userName: user.email.substring(0, user.email.indexOf('@')) +
-              randomNumCreator().toString(),
-          profilePhotoURL:
+        await _firestoreDB.collection('users').doc(user.userID).set({
+          'userID': userMap['userID'],
+          'email': userMap['email'],
+          'userName': userMap['userName'] ??
+              (userMap['email'] as String)
+                      .substring(0, (userMap['email'] as String).indexOf('@')) +
+                  randomNumCreator().toString(),
+          'profilePhotoURL': userMap['profilePhotoURL'] ??
               'https://firebasestorage.googleapis.com/v0/b/messenger-app-8556c.appspot.com/o/blank-profile-picture.png?alt=media&token=c80dcaf1-63ed-43ba-9bf0-fba3e9800501',
-        );
-
-        await _firestoreDB
-            .collection('stories')
-            .doc(user.userID)
-            .set(story.toMap());
+          'createdAt': userMap['createdAt'] ?? FieldValue.serverTimestamp(),
+          'updatedAt': userMap['updatedAt'] ?? FieldValue.serverTimestamp(),
+        });
 
         return true;
       } else {
         return false;
       }
     } catch (e) {
-      print('FIRESTOREDBSERVICE saveUser ERROR: $e');
+      debugPrint('FIRESTOREDBSERVICE saveUser ERROR: $e');
       return false;
     }
+  }
+
+  int randomNumCreator() {
+    int randomInt = Random().nextInt(99999);
+    return randomInt;
   }
 
   @override
@@ -88,7 +92,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
         return false;
       }
     } catch (e) {
-      print('FIRESTOREDBSERVICE updateUserName ERROR: $e');
+      debugPrint('FIRESTOREDBSERVICE updateUserName ERROR: $e');
       return false;
     }
   }
@@ -104,7 +108,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
       User authUser = FirebaseAuth.instance.currentUser!;
       authUser.updatePassword(newPass);
     } catch (e) {
-      print('FIRESTOREDBSERVICE updateUserPass ERROR: $e');
+      debugPrint('FIRESTOREDBSERVICE updateUserPass ERROR: $e');
     }
   }
 
@@ -116,7 +120,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
       await _firestoreDB.collection('stories').doc(currentUser.userID).delete();
       await _firestoreDB
           .collection('chats')
-          .where('currentUser', isEqualTo: currentUser.toMap())
+          .where('fromWho', isEqualTo: currentUser.toMap())
           .get()
           .then(
         (querySnapshot) {
@@ -127,17 +131,16 @@ class FirestoreDBService implements FirestoreDBServiceBase {
       );
 
       await _firebaseAuth.currentUser!.delete();
-      await _firebaseAuthService.signOut();
       return true;
     } catch (e) {
-      print('FIRESTOREDBSERVICE deleteUser ERROR: $e');
+      debugPrint('FIRESTOREDBSERVICE deleteUser ERROR: $e');
       return false;
     }
   }
 
   @override
   Future<bool> updateUserProfilePhoto(
-      {required String userID, required String? newProfilePhotoURL}) async {
+      {required String userID, String? newProfilePhotoURL}) async {
     try {
       if (newProfilePhotoURL != null) {
         await _firestoreDB.collection('users').doc(userID).update({
@@ -155,7 +158,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
         return false;
       }
     } catch (e) {
-      print('FIRESTOREDBSERVICE updateUserProfilePhoto ERROR: $e');
+      debugPrint('FIRESTOREDBSERVICE updateUserProfilePhoto ERROR: $e');
       return false;
     }
   }
@@ -170,24 +173,43 @@ class FirestoreDBService implements FirestoreDBServiceBase {
   }
 
   @override
-  Future<void> addStory(
-      {required String userID,
-      required String storyPhotoUrl,
-      required ValueChanged<bool> resultCallBack}) async {
-    try {
-      var docSnapshot =
-          await _firestoreDB.collection('stories').doc(userID).get();
-      StoryModel story = StoryModel.fromMap(docSnapshot.data()!);
-      story.storyPhotoUrlList!.add(storyPhotoUrl);
+  Future<void> addDefaultStorySettingsToUser({required UserModel user}) async {
+    StoryModel story = StoryModel(user: user);
 
-      await _firestoreDB
-          .collection('stories')
-          .doc(story.userID)
-          .set(story.toMap(), SetOptions(merge: true));
-      resultCallBack(true);
+    await _firestoreDB
+        .collection('stories')
+        .doc(user.userID)
+        .set(story.toMap());
+  }
+
+  @override
+  Future<void> addStory(
+      {required String userID, required String? storyPhotoUrl}) async {
+    try {
+      if (storyPhotoUrl != null) {
+        var docSnapshot =
+            await _firestoreDB.collection('stories').doc(userID).get();
+        StoryModel story = StoryModel.fromMap(docSnapshot.data()!);
+
+        var palleteGenerator = await PaletteGenerator.fromImageProvider(
+          NetworkImage(storyPhotoUrl),
+          maximumColorCount: 5,
+        );
+
+        story.listOfUsersHaveSeen = [];
+        story.storyDetailsList!.add({
+          'storyPhotoUrl': storyPhotoUrl,
+          'dominantColor': palleteGenerator.dominantColor?.color.value,
+          'createdAt': DateTime.now(),
+        });
+
+        await _firestoreDB
+            .collection('stories')
+            .doc(story.user.userID)
+            .set(story.toMap(), SetOptions(merge: true));
+      }
     } catch (e) {
-      resultCallBack(false);
-      print('FIRESTOREDBSERVICE addStory ERROR: $e');
+      debugPrint('FIRESTOREDBSERVICE addStory ERROR: $e');
     }
   }
 
@@ -196,105 +218,136 @@ class FirestoreDBService implements FirestoreDBServiceBase {
       {required String userID,
       required int countOfWillBeFetchedStoryCount,
       required UserModel currentUser}) async {
-    List<StoryModel> listWillBeAdded = [];
-    late QuerySnapshot querySnapshot;
+    try {
+      List<StoryModel> listWillBeAdded = [];
+      late QuerySnapshot querySnapshot;
+      bool hasAnyChanges = false;
 
-    if (storyList == null) {
-      querySnapshot = await _firestoreDB
-          .collection('stories')
-          .where('storyPhotoUrlList', isNotEqualTo: [])
-          .limit(countOfWillBeFetchedStoryCount)
-          .get();
-    } else {
-      querySnapshot = await _firestoreDB
-          .collection('users')
-          .startAfter([userID])
-          .where('storyPhotoUrlList', isNotEqualTo: [])
-          .limit(countOfWillBeFetchedStoryCount)
-          .get();
-    }
-
-    for (var i = 0; i < querySnapshot.docs.length; i++) {
-      QueryDocumentSnapshot storyDoc = querySnapshot.docs[i];
-      Map<String, dynamic> storyObject =
-          storyDoc.data() as Map<String, dynamic>;
-
-      StoryModel storyFromDB = StoryModel.fromMap(storyObject);
-      bool hasInStoryList = findFromStoryList(storyFromDB.userID);
-
-      if (!hasInStoryList) {
-        if (storyFromDB.userID == currentUser.userID) {
-          listWillBeAdded.insert(0, storyFromDB);
-        } else {
-          listWillBeAdded.insert(i, storyFromDB);
-        }
-        // if (storyFromDB.userID == currentUserID) {
-        //   listWillBeAdded.insert(0, storyFromDB);
-        // } else {
-        // }
+      if (storyList == null) {
+        // TODO QUERY HATASI VAR AMK
+        querySnapshot = await _firestoreDB
+            .collection('stories')
+            .where('storyDetailsList', isNotEqualTo: [])
+            .orderBy('user.userName')
+            .limit(countOfWillBeFetchedStoryCount)
+            .get();
+      } else {
+        querySnapshot = await _firestoreDB
+            .collection('stories')
+            .startAfter([userID])
+            .where('storyDetailsList', isNotEqualTo: [])
+            .orderBy('user.userName')
+            .limit(countOfWillBeFetchedStoryCount)
+            .get();
       }
-    }
-    if (!findFromStoryList(currentUser.userID)) {
-      StoryModel story = StoryModel(
-          userID: currentUser.userID,
-          userName: currentUser.userName!,
-          profilePhotoURL: currentUser.profilePhotoURL!,
-          createdAt: currentUser.createdAt,
-          storyPhotoUrlList: []);
 
-      listWillBeAdded.insert(0, story);
-    }
+      for (var i = 0; i < querySnapshot.docs.length; i++) {
+        QueryDocumentSnapshot storyDoc = querySnapshot.docs[i];
+        Map<String, dynamic> storyObject =
+            storyDoc.data() as Map<String, dynamic>;
 
-    if (storyList == null) {
-      storyList = [];
-      storyList!.addAll(listWillBeAdded);
-    } else {
-      storyList!.addAll(listWillBeAdded);
-    }
+        StoryModel storyFromDB = StoryModel.fromMap(storyObject);
 
-    return storyList!;
+        for (var i = 0; i < storyFromDB.storyDetailsList!.length; i++) {
+          Map<String, dynamic> currentStoryDetails =
+              storyFromDB.storyDetailsList![i];
+
+          if (getTimeDifference(currentStoryDetails['createdAt']) >= 24) {
+            storyFromDB.storyDetailsList!.removeAt(i);
+            hasAnyChanges = true;
+          } else {
+            hasAnyChanges = false;
+          }
+        }
+
+        if (hasAnyChanges) {
+          await _firestoreDB
+              .collection('stories')
+              .doc(storyFromDB.user.userID)
+              .update({'storyDetailsList': storyFromDB.storyDetailsList});
+        }
+
+        bool hasInStoryList = findFromStoryList(storyFromDB.user.userID);
+
+        if (!hasInStoryList) {
+          if (storyFromDB.user.userID == currentUser.userID) {
+            listWillBeAdded.insert(0, storyFromDB);
+          } else {
+            if (storyFromDB.storyDetailsList!.isNotEmpty) {
+              listWillBeAdded.add(storyFromDB);
+            }
+          }
+        }
+      }
+
+      if (storyList == null) {
+        storyList = [];
+        storyList!.addAll(listWillBeAdded);
+      } else {
+        storyList!.addAll(listWillBeAdded);
+      }
+
+      if (!findFromStoryList(currentUser.userID)) {
+        StoryModel story = StoryModel(user: currentUser, storyDetailsList: []);
+
+        storyList!.insert(0, story);
+      }
+
+      debugPrint('STORYLIST: $storyList');
+      return storyList!;
+    } catch (e) {
+      debugPrint('FIRESTOREDBSERVICE getStories ERROR: $e');
+      return [];
+    }
   }
 
   @override
   Future<List<UserModel>> getUsers(
-      {required UserModel user,
+      {required UserModel currentUser,
+      required UserModel user,
       required int countOfWillBeFetchedUserCount}) async {
-    List<UserModel> listWillBeAdded = [];
-    late QuerySnapshot querySnapshot;
+    try {
+      List<UserModel> listWillBeAdded = [];
+      late QuerySnapshot querySnapshot;
 
-    if (userList == null) {
-      querySnapshot = await _firestoreDB
-          .collection('users')
-          .orderBy('userName')
-          .limit(countOfWillBeFetchedUserCount)
-          .get();
-    } else {
-      querySnapshot = await _firestoreDB
-          .collection('users')
-          .orderBy('userName')
-          .startAfter([user.userName])
-          .limit(countOfWillBeFetchedUserCount)
-          .get();
-    }
-
-    for (QueryDocumentSnapshot userDoc in querySnapshot.docs) {
-      Map<String, dynamic> userObject = userDoc.data() as Map<String, dynamic>;
-      UserModel userFromDB = UserModel.fromMap(userObject);
-      bool hasInUserList = findFromUserList(userFromDB.userID);
-
-      if (userFromDB.userID != user.userID && !hasInUserList) {
-        listWillBeAdded.add(userFromDB);
+      if (userList == null) {
+        querySnapshot = await _firestoreDB
+            .collection('users')
+            .orderBy('userName')
+            .limit(countOfWillBeFetchedUserCount)
+            .get();
+      } else {
+        querySnapshot = await _firestoreDB
+            .collection('users')
+            .orderBy('userName')
+            .startAfter([user.userName])
+            .limit(countOfWillBeFetchedUserCount)
+            .get();
       }
-    }
 
-    if (userList == null) {
-      userList = [];
-      userList!.addAll(listWillBeAdded);
-    } else {
-      userList!.addAll(listWillBeAdded);
-    }
+      for (QueryDocumentSnapshot userDoc in querySnapshot.docs) {
+        Map<String, dynamic> userObject =
+            userDoc.data() as Map<String, dynamic>;
+        UserModel userFromDB = UserModel.fromMap(userObject);
+        bool hasInUserList = findFromUserList(userFromDB.userID);
 
-    return userList!;
+        if (userFromDB.userID != currentUser.userID && !hasInUserList) {
+          listWillBeAdded.add(userFromDB);
+        }
+      }
+
+      if (userList == null) {
+        userList = [];
+        userList!.addAll(listWillBeAdded);
+      } else {
+        userList!.addAll(listWillBeAdded);
+      }
+
+      return userList!;
+    } catch (e) {
+      debugPrint('FIRESTOREDBSERVICE getUsers ERROR: $e');
+      return [];
+    }
   }
 
   @override
@@ -304,59 +357,65 @@ class FirestoreDBService implements FirestoreDBServiceBase {
       MessageModel? message,
       required int countOfWillBeFetchedMessageCount,
       required bool isInitFunction}) async {
-    List<MessageModel> listWillBeAdded = [];
-    late QuerySnapshot querySnapshot;
+    try {
+      List<MessageModel> listWillBeAdded = [];
+      late QuerySnapshot querySnapshot;
 
-    if (isInitFunction) {
-      messageList = null;
-      querySnapshot = await _firestoreDB
-          .collection('chats')
-          .doc('$currentUserID--$otherUserID')
-          .collection('messages')
-          .orderBy('createdAt', descending: true)
-          .limit(countOfWillBeFetchedMessageCount)
-          .get();
-    } else {
-      querySnapshot = await _firestoreDB
-          .collection('chats')
-          .doc('$currentUserID--$otherUserID')
-          .collection('messages')
-          .orderBy('createdAt', descending: true)
-          .startAfter([message!.createdAt])
-          .limit(countOfWillBeFetchedMessageCount)
-          .get();
-    }
-
-    for (QueryDocumentSnapshot messageDoc in querySnapshot.docs) {
-      Map<String, dynamic> messageObject =
-          messageDoc.data() as Map<String, dynamic>;
-
-      messageObject.update(
-        'message',
-        (value) => decryptMessage(encryptedMessage: messageObject['message']),
-      );
-      MessageModel messageFromDB = MessageModel.fromMap(messageObject);
-      debugPrint('WILL ADDED MESSAGE: $messageFromDB');
-      bool hasInMessageList = findFromMessageList(messageFromDB.messageID!);
-
-      if (!hasInMessageList) {
-        listWillBeAdded.add(messageFromDB);
+      if (isInitFunction) {
+        messageList = null;
+        querySnapshot = await _firestoreDB
+            .collection('chats')
+            .doc('$currentUserID--$otherUserID')
+            .collection('messages')
+            .orderBy('createdAt', descending: true)
+            .limit(countOfWillBeFetchedMessageCount)
+            .get();
+      } else {
+        querySnapshot = await _firestoreDB
+            .collection('chats')
+            .doc('$currentUserID--$otherUserID')
+            .collection('messages')
+            .orderBy('createdAt', descending: true)
+            .startAfter([message!.createdAt])
+            .limit(countOfWillBeFetchedMessageCount)
+            .get();
       }
-    }
 
-    if (messageList == null) {
-      messageList = [];
-      messageList!.addAll(listWillBeAdded);
-    } else {
-      messageList!.addAll(listWillBeAdded);
-    }
+      for (QueryDocumentSnapshot messageDoc in querySnapshot.docs) {
+        Map<String, dynamic> messageObject =
+            messageDoc.data() as Map<String, dynamic>;
 
-    return messageList!;
+        messageObject.update(
+          'message',
+          (value) => decryptMessage(encryptedBase64: messageObject['message']),
+        );
+
+        MessageModel messageFromDB = MessageModel.fromMap(messageObject);
+        bool hasInMessageList = findFromMessageList(messageFromDB.messageID!);
+
+        if (!hasInMessageList) {
+          listWillBeAdded.add(messageFromDB);
+        }
+      }
+
+      if (messageList == null) {
+        messageList = [];
+        messageList!.addAll(listWillBeAdded);
+      } else {
+        messageList!.addAll(listWillBeAdded);
+      }
+
+      return messageList!;
+    } catch (e) {
+      debugPrint('FIRESTOREDBSERVICE getMessages ERROR: $e');
+      return [];
+    }
   }
 
   @override
-  Future<bool> saveChatMessage(
+  Future<bool?> saveChatMessage(
       {required MessageModel message,
+      required String currentUserID,
       required ValueChanged<bool> resultCallBack}) async {
     try {
       String messageID = _firestoreDB.collection('chats').doc().id;
@@ -368,7 +427,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
       Map<String, dynamic> messageMap = message.toMap();
       messageMap.update(
         'message',
-        (value) => encryptMessage(message: message.message),
+        (value) => encryptMessage(message: messageMap['message']),
       );
       messageMap.addEntries({'messageID': messageID}.entries);
 
@@ -377,15 +436,23 @@ class FirestoreDBService implements FirestoreDBServiceBase {
           .doc(currentUserDocID)
           .collection('messages')
           .doc(messageID)
-          .set(messageMap);
+          .set({
+        'messageID': messageID,
+        'fromWho': messageMap['fromWho'],
+        'toWho': messageMap['toWho'],
+        'message': messageMap['message'],
+        'isFromMe': messageMap['isFromMe'],
+        'itBeenSeen': false,
+        'createdAt': messageMap['createdAt'] ?? FieldValue.serverTimestamp(),
+      });
 
       await _firestoreDB.collection('chats').doc(currentUserDocID).set({
-        'currentUser': message.fromWho.toMap(),
-        'otherUser': message.toWho.toMap(),
-        'lastMessage': message.message,
+        'fromWho': messageMap['fromWho'],
+        'toWho': messageMap['toWho'],
+        'lastMessage': messageMap['message'],
         'lastMessageFromWho': 'me',
-        'itBeenSeen': false,
-        'createdAt': FieldValue.serverTimestamp(),
+        'messageLastSeenAt': messageMap['messageLastSeenAt'],
+        'createdAt': messageMap['createdAt'] ?? FieldValue.serverTimestamp(),
       });
 
       messageMap.update('isFromMe', (value) => false);
@@ -395,56 +462,69 @@ class FirestoreDBService implements FirestoreDBServiceBase {
           .doc(otherUserDocID)
           .collection('messages')
           .doc(messageID)
-          .set(messageMap);
+          .set({
+        'messageID': messageID,
+        'fromWho': messageMap['fromWho'],
+        'toWho': messageMap['toWho'],
+        'message': messageMap['message'],
+        'isFromMe': messageMap['isFromMe'],
+        'itBeenSeen': false,
+        'createdAt': messageMap['createdAt'] ?? FieldValue.serverTimestamp(),
+      });
 
       await _firestoreDB.collection('chats').doc(otherUserDocID).set({
-        'currentUser': message.toWho.toMap(),
-        'otherUser': message.fromWho.toMap(),
-        'lastMessage': message.message,
-        'lastMessageFromWho': message.fromWho.userName,
-        'itBeenSeen': false,
-        'createdAt': FieldValue.serverTimestamp(),
+        'fromWho': messageMap['toWho'],
+        'toWho': messageMap['fromWho'],
+        'lastMessage': messageMap['message'],
+        'lastMessageFromWho': messageMap['fromWho']['userName'],
+        'messageLastSeenAt': messageMap['messageLastSeenAt'],
+        'createdAt': messageMap['createdAt'] ?? FieldValue.serverTimestamp(),
       });
 
       resultCallBack(true);
       return true;
     } catch (e) {
-      print('FIRESTOREDBSERVICE saveChatMessage ERROR: $e');
+      debugPrint('FIRESTOREDBSERVICE saveChatMessage ERROR: $e');
+      resultCallBack(false);
       return false;
     }
   }
 
   @override
-  Future<Stream<List<ChatModel>>> getChats(
+  Future<Stream<List<ChatModel>>> getChatListStream(
       {required UserModel currentUser,
       required int countOfWillBeFetchedChatCount}) async {
     try {
-      DateTime messageLastSeenAt =
-          await fetchMessageTime(userID: currentUser.userID);
+      DateTime serverTime = await fetchTime(userID: currentUser.userID);
 
       var snapshot = _firestoreDB
           .collection('chats')
-          .where('currentUser', isEqualTo: currentUser.toMap())
+          .where('fromWho', isEqualTo: currentUser.toMap())
           .orderBy('createdAt', descending: true)
           .limit(countOfWillBeFetchedChatCount)
           .snapshots();
 
-      return snapshot.map(
+      var subscription = snapshot.map(
         (querySnapshot) => querySnapshot.docs.map(
           (queryDocSnapshot) {
             ChatModel chat = ChatModel.fromMap(queryDocSnapshot.data());
             Duration timeDifference =
-                messageLastSeenAt.difference(chat.createdAt!.toDate());
-            timeago.setLocaleMessages('tr', timeago.TrMessages());
-            chat.messageLastSeenAt = timeago.format(messageLastSeenAt.subtract(
-                timeDifference)); // türkçeleştirmek için locale parametresini kullan 'tr' gibi
+                serverTime.difference(chat.createdAt!.toDate());
+            // timeago.setLocaleMessages('tr', timeago.TrMessages());
+            chat.messageLastSeenAt = timeago.format(
+              serverTime.subtract(timeDifference),
+            ); // türkçeleştirmek için locale parametresini kullan 'tr' gibi
+            chat.lastMessage =
+                decryptMessage(encryptedBase64: chat.lastMessage);
 
             return chat;
           },
         ).toList(),
       );
+
+      return subscription;
     } catch (e) {
-      print('FIRESTOREDBSERVICE getChats ERROR: $e');
+      debugPrint('FIRESTOREDBSERVICE getChatListStream ERROR: $e');
       return Stream.empty();
     }
   }
@@ -452,7 +532,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
   bool findFromStoryList(String userID) {
     if (storyList != null) {
       for (var i = 0; i < storyList!.length; i++) {
-        if (storyList![i].userID == userID) {
+        if (storyList![i].user.userID == userID) {
           return true;
         }
       }
@@ -486,18 +566,18 @@ class FirestoreDBService implements FirestoreDBServiceBase {
   }
 
   @override
-  Future<DateTime> fetchMessageTime(
+  Future<DateTime> fetchTime(
       {required String userID, bool isStory = false}) async {
-    if (!isStory) {
-      await _firestoreDB
-          .collection('server')
-          .doc(userID)
-          .set({'messageTimer': FieldValue.serverTimestamp()});
-    } else {
+    if (isStory) {
       await _firestoreDB
           .collection('server')
           .doc(userID)
           .set({'storyTimer': FieldValue.serverTimestamp()});
+    } else {
+      await _firestoreDB
+          .collection('server')
+          .doc(userID)
+          .set({'messageTimer': FieldValue.serverTimestamp()});
     }
 
     var fetchedMap = await _firestoreDB.collection('server').doc(userID).get();
@@ -522,10 +602,16 @@ class FirestoreDBService implements FirestoreDBServiceBase {
     return snapshot.map(
       (querySnapshot) => querySnapshot.docs.map(
         (queryDocSnapshot) {
-          MessageModel message = MessageModel.fromMap(queryDocSnapshot.data());
-          bool messageFromMessageList = findFromMessageList(message.messageID!);
+          Map<String, dynamic> messageMap = queryDocSnapshot.data();
+          messageMap.update(
+            'message',
+            (value) => decryptMessage(encryptedBase64: messageMap['message']),
+          );
+          MessageModel message = MessageModel.fromMap(messageMap);
+          bool messageHasInMessageList =
+              findFromMessageList(message.messageID!);
 
-          if (!messageFromMessageList && message.createdAt != null) {
+          if (!messageHasInMessageList) {
             return message;
           }
         },
@@ -533,18 +619,54 @@ class FirestoreDBService implements FirestoreDBServiceBase {
     );
   }
 
-  String encryptMessage({required String message}) {
-    final encrypter = Encrypter(AES(key));
+  @override
+  Stream<List<dynamic>?> currentUserStoryListener(
+      {required String currentUserID}) {
+    var snapshot =
+        _firestoreDB.collection('stories').doc(currentUserID).snapshots();
 
-    final encrypted = encrypter.encrypt(message, iv: iv);
-    return encrypted.base64;
+    return snapshot.map(
+      (queryDocSnapshot) {
+        Map<String, dynamic> storyMap = queryDocSnapshot.data()!;
+        StoryModel storyFromDB = StoryModel.fromMap(storyMap);
+
+        return storyFromDB.storyDetailsList;
+      },
+    );
   }
 
-  String decryptMessage({required String encryptedMessage}) {
-    final encrypter = Encrypter(AES(key));
+  // String encryptMessage({required String message}) {
+  //   final Encrypter encrypter = encrypt.Encrypter(AES(key, padding: null));
 
-    final decrypted = encrypter
-        .decrypt(encrypt.Encrypted.fromBase64(encryptedMessage), iv: iv);
-    return decrypted;
+  //   final Encrypted encrypted = encrypter.encrypt(message, iv: iv);
+  //   return encrypted.base64;
+  // }
+
+  // String decryptMessage({required String encryptedBase64}) {
+  //   final Encrypter encrypter = Encrypter(AES(key, padding: null));
+
+  //   final String decrypted = encrypter
+  //       .decrypt(encrypt.Encrypted.fromBase64(encryptedBase64), iv: iv);
+  //   return decrypted;
+  // }
+
+  String encryptMessage({required String message}) {
+    String encoded = stringToBase64.encode(message);
+
+    return encoded;
+  }
+
+  String decryptMessage({required String encryptedBase64}) {
+    String decoded = stringToBase64.decode(encryptedBase64);
+
+    return decoded;
+  }
+
+  int getTimeDifference(Timestamp storyCreatedAtTimestamp) {
+    DateTime currentDateTime = DateTime.now();
+    DateTime storyCreatedAt = storyCreatedAtTimestamp.toDate();
+    Duration timeDifference = currentDateTime.difference(storyCreatedAt);
+
+    return timeDifference.inHours;
   }
 }

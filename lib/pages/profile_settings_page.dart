@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:animate_do/animate_do.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,7 +61,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     });
 
     if (mounted) {
-      Navigator.pop(context);
+      Navigator.of(context).pop(true);
     }
   }
 
@@ -121,7 +122,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                             backgroundColor: Colors.white,
                             backgroundImage: newProfilePhoto != null
                                 ? FileImage(File(newProfilePhoto!.path))
-                                : NetworkImage(
+                                : CachedNetworkImageProvider(
                                     userViewModelBloc.user!.profilePhotoURL!),
                           ),
                         ),
@@ -349,7 +350,6 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         userViewModelBloc.add(
           UpdateUserProfilePhotoEvent(
             userID: userViewModelBloc.user!.userID,
-            fileType: 'profile-photo',
             newProfilePhoto: newProfilePhoto,
           ),
         );

@@ -20,8 +20,8 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   String? _email, _pass1, _pass2;
-  String _initialEmail = 'anil@gmail.com';
-  String _initialPass = '123456';
+  String _initialEmail = Consts.initialEmail;
+  String _initialPass = Consts.initialPass;
 
   @override
   void initState() {
@@ -48,13 +48,32 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     if (userViewModelBloc.state is UserViewModelBusyState) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: CircularProgressIndicator(color: Consts.inactiveColor)));
     } else {
       if (userViewModelBloc.generalErrorMessage != null) {
         return Scaffold(
-          body: ErrorPageWidget(
-            text: userViewModelBloc.generalErrorMessage!,
-            iconData: FontAwesomeIcons.robot,
+          body: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ErrorPageWidget(
+                text: userViewModelBloc.generalErrorMessage!,
+                iconData: FontAwesomeIcons.robot,
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  userViewModelBloc.generalErrorMessage = null;
+                  setState(() {});
+                },
+                child: Text(
+                  'Try again',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       } else {

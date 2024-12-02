@@ -10,7 +10,6 @@ class UserModel {
   String? profilePhotoURL;
   Timestamp? createdAt;
   Timestamp? updatedAt;
-  int? level;
 
   UserModel({required this.userID, this.email = ''});
 
@@ -23,9 +22,8 @@ class UserModel {
               randomNumCreator().toString(),
       'profilePhotoURL': profilePhotoURL ??
           'https://firebasestorage.googleapis.com/v0/b/messenger-app-8556c.appspot.com/o/blank-profile-picture.png?alt=media&token=c80dcaf1-63ed-43ba-9bf0-fba3e9800501',
-      'createdAt': createdAt ?? FieldValue.serverTimestamp(),
-      'updatedAt': updatedAt ?? FieldValue.serverTimestamp(),
-      'level': level ?? 1,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
     };
   }
 
@@ -35,8 +33,7 @@ class UserModel {
         userName = map['userName'],
         profilePhotoURL = map['profilePhotoURL'],
         createdAt = map['createdAt'],
-        updatedAt = map['updatedAt'],
-        level = map['level'];
+        updatedAt = map['updatedAt'];
 
   int randomNumCreator() {
     int randomInt = Random().nextInt(99999);
@@ -56,6 +53,6 @@ class UserModel {
 
   @override
   String toString() {
-    return 'UserModel(userID: $userID, email: $email, userName: $userName, profilePhotoURL: $profilePhotoURL, createdAt: $createdAt, updatedAt: $updatedAt, level: $level)';
+    return 'UserModel(userID: $userID, email: $email, userName: $userName)';
   }
 }

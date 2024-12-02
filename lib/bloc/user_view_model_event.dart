@@ -1,7 +1,7 @@
 part of 'user_view_model_bloc.dart';
 
 @immutable
-abstract class UserViewModelEvent {}
+sealed class UserViewModelEvent {}
 
 class CurrentUserEvent extends UserViewModelEvent {}
 
@@ -19,15 +19,13 @@ class GetMessagesEvent extends UserViewModelEvent {
   final MessageModel? message;
   final int countOfWillBeFetchedMessageCount;
   final bool isInitFunction;
-  final BuildContext context;
 
   GetMessagesEvent(
       {required this.currentUserID,
       required this.otherUserID,
       required this.message,
       required this.countOfWillBeFetchedMessageCount,
-      required this.isInitFunction,
-      required this.context});
+      this.isInitFunction = false});
 }
 
 class SaveChatMessageEvent extends UserViewModelEvent {
@@ -48,22 +46,21 @@ class GetChatsEvent extends UserViewModelEvent {
 }
 
 class AddStoryEvent extends UserViewModelEvent {
-  final String storyPhotoUrl;
   final String userID;
-  final ValueChanged<bool> resultCallBack;
+  final XFile newStoryPhoto;
 
-  AddStoryEvent(
-      {required this.storyPhotoUrl,
-      required this.userID,
-      required this.resultCallBack});
+  AddStoryEvent({required this.userID, required this.newStoryPhoto});
 }
 
 class GetStoriesEvent extends UserViewModelEvent {
   final String userID;
   final int countOfWillBeFetchedStoryCount;
+  final bool isInitFunction;
 
   GetStoriesEvent(
-      {required this.userID, required this.countOfWillBeFetchedStoryCount});
+      {required this.userID,
+      required this.countOfWillBeFetchedStoryCount,
+      this.isInitFunction = false});
 }
 
 class UpdateUserNameEvent extends UserViewModelEvent {
@@ -96,12 +93,10 @@ class DeleteUserEvent extends UserViewModelEvent {
 
 class UpdateUserProfilePhotoEvent extends UserViewModelEvent {
   final String userID;
-  final String fileType;
   final XFile? newProfilePhoto;
 
   UpdateUserProfilePhotoEvent({
     required this.userID,
-    required this.fileType,
     required this.newProfilePhoto,
   });
 }

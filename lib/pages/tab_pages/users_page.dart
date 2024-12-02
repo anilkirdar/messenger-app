@@ -1,9 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../bloc/user_view_model_bloc.dart';
+import '../../consts/consts.dart';
 import '../../models/user_model.dart';
 import '../chat_page.dart';
 
@@ -50,7 +52,8 @@ class _UsersPageState extends State<UsersPage> {
       ),
       body: SafeArea(
         child: userViewModelBloc.userList == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(
+                child: CircularProgressIndicator(color: Consts.inactiveColor))
             : userViewModelBloc.userList!.isNotEmpty
                 ? ListView.builder(
                     controller: _scrollController,
@@ -65,8 +68,7 @@ class _UsersPageState extends State<UsersPage> {
                             child: Align(
                               widthFactor: 1,
                               child: CircularProgressIndicator(
-                                color: Colors.black54,
-                              ),
+                                  color: Consts.inactiveColor),
                             ),
                           );
                         } else {
@@ -103,8 +105,8 @@ class _UsersPageState extends State<UsersPage> {
                               style: const TextStyle(color: Colors.black54),
                             ),
                             leading: CircleAvatar(
-                              backgroundImage:
-                                  NetworkImage(otherUser.profilePhotoURL!),
+                              backgroundImage: CachedNetworkImageProvider(
+                                  otherUser.profilePhotoURL!),
                             ),
                           ),
                         );
@@ -142,10 +144,12 @@ class _UsersPageState extends State<UsersPage> {
     getUserList();
     _scrollController.addListener(
       () {
-        if (_scrollController.offset >=
-                _scrollController.position.maxScrollExtent &&
-            !_scrollController.position.outOfRange) {
-          getUserList(user: userViewModelBloc.userList!.last);
+        if (_scrollController.positions.isNotEmpty) {
+          if (_scrollController.offset >=
+                  _scrollController.position.maxScrollExtent &&
+              !_scrollController.position.outOfRange) {
+            getUserList(user: userViewModelBloc.userList!.last);
+          }
         }
       },
     );

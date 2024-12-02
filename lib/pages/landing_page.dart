@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../bloc/user_view_model_bloc.dart';
+import '../consts/consts.dart';
 import '../widgets/error_page_widget.dart';
 import 'sign_pages/sign_page.dart';
 import 'tabs_base_page.dart';
@@ -48,7 +49,11 @@ class _LandingPageState extends State<LandingPage> {
         if (userModelBloc.state is UserViewModelBusyState) {
           return const PopScope(
             canPop: false,
-            child: Scaffold(body: Center(child: CircularProgressIndicator())),
+            child: Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(color: Consts.inactiveColor),
+              ),
+            ),
           );
         } else {
           if (userModelBloc.user == null) {
@@ -84,7 +89,7 @@ class _LandingPageState extends State<LandingPage> {
         );
       }
     } else {
-      return Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(body: Center(child: CircularProgressIndicator(color: Consts.inactiveColor)));
     }
   }
 

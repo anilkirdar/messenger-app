@@ -20,8 +20,8 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   String? _email, _pass;
-  String _initialEmail = 'anil@gmail.com';
-  String _initialPass = '123456';
+  String _initialEmail = Consts.initialEmail;
+  String _initialPass = Consts.initialPass;
 
   @override
   void initState() {
@@ -74,7 +74,7 @@ class _LoginPageState extends State<LoginPage> {
       );
     } else {
       if (userViewModelBloc.state is UserViewModelBusyState) {
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        return const Scaffold(body: Center(child: CircularProgressIndicator(color: Consts.inactiveColor)));
       } else {
         return PopScope(
           onPopInvokedWithResult: (didPop, result) {
@@ -122,9 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                                     fontSize: 30, fontWeight: FontWeight.bold),
                               ),
                             ),
-                            SizedBox(
-                              height: 20,
-                            ),
+                            SizedBox(height: 20),
                             FadeInUp(
                               duration: Duration(milliseconds: 1200),
                               child: Text(

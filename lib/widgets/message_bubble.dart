@@ -1,8 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 
+import '../consts/consts.dart';
 import '../models/message_model.dart';
 import '../models/user_model.dart';
 
@@ -34,7 +36,8 @@ class MessageBubble extends StatelessWidget {
             if (!message.isFromMe)
               CircleAvatar(
                 backgroundColor: Colors.grey.withAlpha(40),
-                backgroundImage: NetworkImage(otherUser.profilePhotoURL!),
+                backgroundImage:
+                    CachedNetworkImageProvider(otherUser.profilePhotoURL!),
                 radius: 16,
               ),
             Container(
@@ -48,7 +51,7 @@ class MessageBubble extends StatelessWidget {
                     (MediaQuery.of(context).size.width / 3),
               ),
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: Consts.quaternaryAppColor,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Padding(
@@ -68,7 +71,7 @@ class MessageBubble extends StatelessWidget {
                       children: [
                         Text(
                           _dateTimeFormatter(
-                              message.createdAt ?? Timestamp(1, 1)),
+                              message.createdAt ?? Timestamp.now()),
                           style: const TextStyle(
                             color: Colors.white54,
                             fontWeight: FontWeight.bold,
@@ -90,7 +93,8 @@ class MessageBubble extends StatelessWidget {
             if (message.isFromMe)
               CircleAvatar(
                 backgroundColor: Colors.grey.withAlpha(40),
-                backgroundImage: NetworkImage(currentUser.profilePhotoURL!),
+                backgroundImage:
+                    CachedNetworkImageProvider(currentUser.profilePhotoURL!),
                 radius: 16,
               ),
           ],
@@ -100,8 +104,9 @@ class MessageBubble extends StatelessWidget {
   }
 
   String _dateTimeFormatter(Timestamp timestamp) {
+    DateTime dateTime = timestamp.toDate();
     DateFormat formatter = DateFormat.Hm();
-    var formattedTime = formatter.format(timestamp.toDate());
+    var formattedTime = formatter.format(dateTime);
     return formattedTime;
   }
 }

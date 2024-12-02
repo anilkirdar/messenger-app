@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,9 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../bloc/user_view_model_bloc.dart';
 import '../consts/consts.dart';
-import '../locator.dart';
 import '../models/chat_model.dart';
-import '../repository/user_repository.dart';
 import 'chat_page.dart';
 import 'tab_pages/users_page.dart';
 
@@ -19,8 +18,6 @@ class MessagesPage extends StatefulWidget {
 }
 
 class _MessagesPageState extends State<MessagesPage> {
-  final UserRepository _userRepository = locator.get<UserRepository>();
-
   @override
   Widget build(BuildContext context) {
     final userViewModelBloc = context.watch<UserViewModelBloc>();
@@ -73,8 +70,8 @@ class _MessagesPageState extends State<MessagesPage> {
                               Navigator.of(context, rootNavigator: true)
                                   .push(CupertinoPageRoute(
                                 builder: (context) => ChatPage(
-                                  currentUser: chat.currentUser,
-                                  otherUser: chat.otherUser,
+                                  currentUser: chat.fromWho,
+                                  otherUser: chat.toWho,
                                 ),
                               ))
                                   .then(
@@ -89,7 +86,7 @@ class _MessagesPageState extends State<MessagesPage> {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    chat.otherUser.userName!,
+                                    chat.toWho.userName!,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
@@ -115,8 +112,8 @@ class _MessagesPageState extends State<MessagesPage> {
                               ),
                               leading: CircleAvatar(
                                 backgroundColor: Colors.grey.withAlpha(40),
-                                backgroundImage: NetworkImage(
-                                    chat.otherUser.profilePhotoURL!),
+                                backgroundImage: CachedNetworkImageProvider(
+                                    chat.toWho.profilePhotoURL!),
                               ),
                             ),
                           );
@@ -146,18 +143,22 @@ class _MessagesPageState extends State<MessagesPage> {
                     ));
                   }
                 } else {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child:
+                        CircularProgressIndicator(color: Consts.inactiveColor),
+                  );
                 }
               },
             )
-          : const Center(child: CircularProgressIndicator()),
+          : const Center(
+              child: CircularProgressIndicator(color: Consts.inactiveColor)),
     );
   }
 
-  getStream({required UserViewModelBloc userViewModelBloc}) async {
-    return await _userRepository.getChats(
-      currentUser: userViewModelBloc.user!,
-      countOfWillBeFetchedChatCount: 12,
-    );
-  }
+  // getStream({required UserViewModelBloc userViewModelBloc}) async {
+  //   return await _userRepository.getChats(
+  //     currentUser: userViewModelBloc.user!,
+  //     countOfWillBeFetchedChatCount: 12,
+  //   );
+  // }
 }

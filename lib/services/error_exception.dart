@@ -16,8 +16,7 @@ class ErrorException {
       case 'invalid-credential':
         return {
           'errorType': ErrorType.both,
-          'error':
-              "These credential incorrect! Please check your email and password."
+          'error': "Incorrect email or password!"
         };
       case 'network-request-failed':
         return {

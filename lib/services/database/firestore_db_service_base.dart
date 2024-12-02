@@ -9,6 +9,10 @@ abstract class FirestoreDBServiceBase {
 
   Future<UserModel> readUser(String userID);
 
+  Future<void> addDefaultStorySettingsToUser({required UserModel user});
+
+  void setNull();
+
   Future<bool> updateUserName(
       {required String userID,
       required String newUserName,
@@ -25,7 +29,8 @@ abstract class FirestoreDBServiceBase {
   });
 
   Future<void> addStory(
-      {required String userID, required String storyPhotoUrl, required ValueChanged<bool> resultCallBack});
+      {required String userID,
+      required String? storyPhotoUrl});
 
   Future<List<StoryModel>> getStories(
       {required String userID,
@@ -33,9 +38,11 @@ abstract class FirestoreDBServiceBase {
       required UserModel currentUser});
 
   Future<List<UserModel>> getUsers(
-      {required UserModel user, required int countOfWillBeFetchedUserCount});
+      {required UserModel currentUser,
+      required UserModel user,
+      required int countOfWillBeFetchedUserCount});
 
-  Future<Stream<List<ChatModel>>> getChats(
+  Future<Stream<List<ChatModel>>> getChatListStream(
       {required UserModel currentUser,
       required int countOfWillBeFetchedChatCount});
 
@@ -46,17 +53,16 @@ abstract class FirestoreDBServiceBase {
       required int countOfWillBeFetchedMessageCount,
       required bool isInitFunction});
 
-  // void activateMessageListener(
-  //     {required String currentUserID,
-  //     required String otherUserID,
-  //     required BuildContext context});
-
   Stream<List<MessageModel?>> messageListener(
       {required String currentUserID, required String otherUserID});
 
-  Future<DateTime> fetchMessageTime({required String userID});
+  Stream<List<dynamic>?> currentUserStoryListener(
+      {required String currentUserID});
 
-  Future<bool> saveChatMessage(
+  Future<DateTime> fetchTime({required String userID});
+
+  Future<bool?> saveChatMessage(
       {required MessageModel message,
+      required String currentUserID,
       required ValueChanged<bool> resultCallBack});
 }
