@@ -44,7 +44,9 @@ class _UsersPageState extends State<UsersPage> {
     Size size = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: Consts.backgroundColor,
       appBar: AppBar(
+        backgroundColor: Consts.backgroundColor,
         title: const Text(
           'Users',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
@@ -81,13 +83,14 @@ class _UsersPageState extends State<UsersPage> {
 
                         return GestureDetector(
                           onTap: () {
-                            Navigator.of(context, rootNavigator: true)
-                                .push(CupertinoPageRoute(
-                              builder: (context) => ChatPage(
-                                currentUser: userViewModelBloc.user!,
-                                otherUser: otherUser,
+                            Navigator.of(context, rootNavigator: true).push(
+                              CupertinoPageRoute(
+                                builder: (context) => ChatPage(
+                                  currentUser: userViewModelBloc.user!,
+                                  otherUser: otherUser,
+                                ),
                               ),
-                            ));
+                            );
                           },
                           child: ListTile(
                             title: Text(

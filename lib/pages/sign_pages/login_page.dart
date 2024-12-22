@@ -48,6 +48,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (userViewModelBloc.generalErrorMessage != null) {
       return Scaffold(
+        backgroundColor: Consts.backgroundColor,
         body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -74,7 +75,12 @@ class _LoginPageState extends State<LoginPage> {
       );
     } else {
       if (userViewModelBloc.state is UserViewModelBusyState) {
-        return const Scaffold(body: Center(child: CircularProgressIndicator(color: Consts.inactiveColor)));
+        return const Scaffold(
+          backgroundColor: Consts.backgroundColor,
+          body: Center(
+            child: CircularProgressIndicator(color: Consts.inactiveColor),
+          ),
+        );
       } else {
         return PopScope(
           onPopInvokedWithResult: (didPop, result) {
@@ -87,10 +93,10 @@ class _LoginPageState extends State<LoginPage> {
           },
           child: Scaffold(
             resizeToAvoidBottomInset: false,
-            backgroundColor: Colors.white,
+            backgroundColor: Consts.backgroundColor,
             appBar: AppBar(
               elevation: 0,
-              backgroundColor: Colors.white,
+              backgroundColor: Consts.backgroundColor,
               leading: IconButton(
                 onPressed: () {
                   Navigator.pop(context);

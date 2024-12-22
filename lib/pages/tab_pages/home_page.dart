@@ -6,8 +6,8 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../bloc/user_view_model_bloc.dart';
 import '../../consts/consts.dart';
-import '../story_detail_card_widget.dart';
-import '../story_detail_page_with_pl.dart';
+import '../../widgets/story_detail_card_widget.dart';
+import '../story_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -46,22 +46,27 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final userViewModelBloc = context.watch<UserViewModelBloc>();
     Size size = MediaQuery.of(context).size;
-    
+
     return Scaffold(
+      backgroundColor: Consts.backgroundColor,
       appBar: AppBar(
+        backgroundColor: Consts.backgroundColor,
         title: const Text(
           'Chatrix',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
         ),
       ),
-      body: SafeArea(
-        child: userViewModelBloc.storyList == null
-            ? const Center(
-                child: CircularProgressIndicator(color: Consts.inactiveColor))
-            : userViewModelBloc.storyList!.isNotEmpty
-                ? SizedBox(
-                    height: size.height,
-                    width: size.width,
+      body: userViewModelBloc.storyList == null
+          ? const Center(
+              child: CircularProgressIndicator(color: Consts.inactiveColor))
+          : userViewModelBloc.storyList!.isNotEmpty
+              ? SizedBox(
+                  height: size.height,
+                  width: size.width,
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      setState(() {});
+                    },
                     child: SingleChildScrollView(
                       scrollDirection: Axis.vertical,
                       child: Column(
@@ -113,7 +118,7 @@ class _HomePageState extends State<HomePage> {
                                                   builder: (
                                                     context,
                                                   ) =>
-                                                      StoryDetailPageWithPl(
+                                                      StoryDetailPage(
                                                     currentStoryIndex:
                                                         userViewModelBloc
                                                                 .storyList![0]
@@ -158,9 +163,12 @@ class _HomePageState extends State<HomePage> {
                                               GestureDetector(
                                                 onTap: () async {
                                                   await showModalBottomSheet(
+                                                    useRootNavigator: true,
                                                     context: context,
                                                     builder: (context) {
-                                                      return SizedBox(
+                                                      return Container(
+                                                        color: Consts
+                                                            .backgroundColor,
                                                         height: MediaQuery.of(
                                                                     context)
                                                                 .size
@@ -174,6 +182,8 @@ class _HomePageState extends State<HomePage> {
                                                                       .camera),
                                                               title: const Text(
                                                                   'Take a photo'),
+                                                              splashColor: Colors
+                                                                  .transparent,
                                                               onTap:
                                                                   pickImageFromCamera,
                                                             ),
@@ -181,6 +191,8 @@ class _HomePageState extends State<HomePage> {
                                                               leading: const FaIcon(
                                                                   FontAwesomeIcons
                                                                       .image),
+                                                              splashColor: Colors
+                                                                  .transparent,
                                                               title: const Text(
                                                                   'Choose from gallery'),
                                                               onTap:
@@ -236,7 +248,7 @@ class _HomePageState extends State<HomePage> {
                                                 .push(
                                               MaterialPageRoute(
                                                 builder: (context) =>
-                                                    StoryDetailPageWithPl(
+                                                    StoryDetailPage(
                                                   currentStoryIndex:
                                                       userViewModelBloc
                                                               .storyList![0]
@@ -284,33 +296,16 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           SizedBox(height: 10),
-                          SizedBox(
-                            width: size.width,
-                            height: size.height - (size.height / 12),
-                            child: userViewModelBloc.storyList!.isNotEmpty
-                                ? ListView.builder(
-                                    itemCount:
-                                        userViewModelBloc.storyList!.length,
-                                    scrollDirection: Axis.vertical,
-                                    itemBuilder: (context, index) {
-                                      if (userViewModelBloc.storyList![index]
-                                          .storyDetailsList!.isNotEmpty) {
-                                        return StoryDetailCardWidget(
-                                            story: userViewModelBloc
-                                                .storyList![index]);
-                                      } else {
-                                        return SizedBox();
-                                      }
-                                    },
-                                  )
-                                : SizedBox(),
-                          ),
+                          Column(
+                              children: getPostList(
+                                  userViewModelBloc: userViewModelBloc)),
+                          SizedBox(height: size.height / 10),
                         ],
                       ),
                     ),
-                  )
-                : SizedBox(),
-      ),
+                  ),
+                )
+              : SizedBox(),
     );
   }
 
@@ -350,7 +345,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     if (mounted) {
-      Navigator.pop(context);
+      Navigator.popUntil(context, (route) => route.isFirst);
     }
   }
 
@@ -362,7 +357,21 @@ class _HomePageState extends State<HomePage> {
     });
 
     if (mounted) {
-      Navigator.pop(context);
+      Navigator.popUntil(context, (route) => route.isFirst);
     }
+  }
+
+  List<Widget> getPostList({required UserViewModelBloc userViewModelBloc}) {
+    List<Widget> postList = [];
+
+    if (userViewModelBloc.storyList!.isNotEmpty) {
+      for (int i = userViewModelBloc.storyList!.length - 1; i >= 0; i--) {
+        if (userViewModelBloc.storyList![i].storyDetailsList!.isNotEmpty) {
+          postList.add(
+              StoryDetailCardWidget(story: userViewModelBloc.storyList![i]));
+        }
+      }
+    }
+    return postList;
   }
 }

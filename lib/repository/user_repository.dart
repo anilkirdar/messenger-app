@@ -74,6 +74,7 @@ class UserRepository {
 
       await _firestoreService.addStory(
         storyPhotoUrl: storyPhotoUrl,
+        fileName: newStoryPhoto.name,
         userID: userID,
       );
     }

@@ -72,7 +72,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _passTextFieldError = null;
       },
       child: Scaffold(
+        backgroundColor: Consts.backgroundColor,
         appBar: AppBar(
+          backgroundColor: Consts.backgroundColor,
           // leading: Padding(
           //   padding: const EdgeInsets.only(left: 20),
           //   child: IconButton(

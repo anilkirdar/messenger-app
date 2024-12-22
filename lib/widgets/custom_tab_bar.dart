@@ -121,7 +121,7 @@ class CustomTabBar extends StatelessWidget implements CupertinoTabBar {
   bool opaque(BuildContext context) {
     final Color backgroundColor =
         this.backgroundColor ?? CupertinoTheme.of(context).barBackgroundColor;
-    return CupertinoDynamicColor.resolve(backgroundColor, context).alpha ==
+    return CupertinoDynamicColor.resolve(backgroundColor, context).a ==
         0xFF;
   }
 
@@ -173,7 +173,7 @@ class BottomNavBarCustomPainter extends CustomPainter {
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height)
       ..close();
-    canvas.drawShadow(path, Colors.black, 5, true);
+    canvas.drawShadow(path, Colors.black, 0, true);
     canvas.drawPath(path, paint);
   }
 

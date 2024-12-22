@@ -16,6 +16,7 @@ class SignPage extends StatelessWidget {
     final userViewModelBloc = context.read<UserViewModelBloc>();
 
     return Scaffold(
+      backgroundColor: Consts.backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Container(

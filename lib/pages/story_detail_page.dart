@@ -1,190 +1,149 @@
-// ignore_for_file: use_build_context_synchronously
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:story_time/story_time.dart';
 
 import '../bloc/user_view_model_bloc.dart';
 import '../consts/consts.dart';
 import '../models/story_model.dart';
-import 'tab_pages/profile_page.dart';
+import '../models/user_model.dart';
 
-// ignore: must_be_immutable
 class StoryDetailPage extends StatefulWidget {
-  final StoryModel story;
-  int currentStoryIndex;
-  StoryDetailPage(
-      {super.key, required this.story, required this.currentStoryIndex});
+  final int currentStoryIndex;
+  final List<StoryModel?> storyList;
+  const StoryDetailPage(
+      {super.key, required this.currentStoryIndex, required this.storyList});
 
   @override
   State<StoryDetailPage> createState() => _StoryDetailPageState();
 }
 
 class _StoryDetailPageState extends State<StoryDetailPage> {
-  late int currentStoryDetailIndex;
+  late ValueNotifier<IndicatorAnimationCommand> _controller;
+  late List<StoryModel?> _willUsedList;
+  late bool _isStoryPaused;
   final _firestoreDB = FirebaseFirestore.instance;
 
   @override
   void initState() {
     super.initState();
-    currentStoryDetailIndex = 0;
+    _isStoryPaused = false;
+    _controller = ValueNotifier<IndicatorAnimationCommand>(
+      IndicatorAnimationCommand(resume: !_isStoryPaused, pause: _isStoryPaused),
+    );
+    _controller.value = IndicatorAnimationCommand(
+      duration: const Duration(seconds: 2),
+    );
+    _willUsedList = [];
+    _willUsedList.addAll(widget.storyList);
+    if (widget.storyList[0]!.storyDetailsList!.isEmpty) {
+      _willUsedList.removeAt(0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final userViewModelBloc = context.read<UserViewModelBloc>();
-    Size size = MediaQuery.of(context).size;
-    StoryModel currentStory =
-        userViewModelBloc.storyList![widget.currentStoryIndex];
 
-    return Scaffold(
-      backgroundColor: Colors.black87,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SizedBox(
-              height: size.height,
-              width: size.width,
-              child: Image.network(
-                widget.story.storyDetailsList![currentStoryDetailIndex]
-                    ['storyPhotoUrl'],
-                fit: BoxFit.contain,
-              ),
-            ),
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      for (var i = 0;
-                          i < widget.story.storyDetailsList!.length;
-                          i++)
-                        Expanded(
-                          child: Container(
-                            margin: EdgeInsets.only(right: 5),
-                            color: currentStoryDetailIndex >= i
-                                ? Colors.white
-                                : Consts.inactiveColor,
-                            height: 5,
-                          ),
-                        ),
-                    ],
+    return SafeArea(
+      child: Scaffold(
+        body: StoryPageView(
+          initialPage: widget.currentStoryIndex,
+          pageLength: _willUsedList.length,
+          storyLength: (int pageIndex) {
+            return _willUsedList[pageIndex]!.storyDetailsList!.length;
+          },
+          itemBuilder: (context, pageIndex, storyIndex) {
+            final StoryModel storyModel = _willUsedList[pageIndex]!;
+            final UserModel user = storyModel.user;
+            final Map<String, dynamic> story =
+                storyModel.storyDetailsList![storyIndex];
+
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: Container(
+                    color: Color(story['dominantColor'] ?? 0x00000000),
                   ),
-                  SizedBox(height: 20),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) =>
-                                ProfilePage(user: widget.story.user),
-                          ));
-                        },
+                ),
+                Positioned.fill(child: Image.network(story['storyPhotoUrl'])),
+                _isStoryPaused
+                    ? SizedBox()
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 44, left: 8),
                         child: Row(
                           children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.grey.withAlpha(40),
-                              backgroundImage: NetworkImage(
-                                  widget.story.user.profilePhotoURL!),
-                              radius: 16,
+                            Container(
+                              height: 32,
+                              width: 32,
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: CachedNetworkImageProvider(
+                                      user.profilePhotoURL!),
+                                ),
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 8),
                             Text(
-                              widget.story.user.userName!,
+                              user.userName!,
                               style: TextStyle(
+                                fontSize: 17,
                                 color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              getTimeDifference(story['createdAt']),
+                              style: TextStyle(
+                                color: Consts.inactiveColor,
                                 fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      SizedBox(width: 10),
-                      Text(
-                        getTimeDifference(widget.story
-                                .storyDetailsList![currentStoryDetailIndex]
-                            ['createdAt']),
-                        style: TextStyle(
-                          color: Consts.inactiveColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+              ],
+            );
+          },
+          gestureItemBuilder: (context, pageIndex, storyIndex) {
+            return _isStoryPaused
+                ? SizedBox()
+                : Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 32),
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        color: Colors.white,
+                        icon: Icon(Icons.close),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
                       ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      if (currentStoryDetailIndex > 0) {
-                        currentStoryDetailIndex -= 1;
-                        setState(() {});
-                      }
-                    },
-                    child: Container(
-                      color: Colors.transparent,
-                      height: size.height - (size.height / 5),
-                      width: size.width / 2,
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: () async {
-                      if (currentStoryDetailIndex <
-                          widget.story.storyDetailsList!.length - 1) {
-                        currentStoryDetailIndex += 1;
-                        setState(() {});
-                      } else {
-                        if (!currentStory.listOfUsersHaveSeen!
-                                .contains(userViewModelBloc.user!.userID) &&
-                            userViewModelBloc.user!.userID !=
-                                currentStory.user.userID) {
-                          currentStory.listOfUsersHaveSeen!
-                              .add(userViewModelBloc.user!.userID);
-    
-                          await _firestoreDB
-                              .collection('stories')
-                              .doc(widget.story.user.userID)
-                              .update({
-                            'listOfUsersHaveSeen': userViewModelBloc
-                                .storyList![widget.currentStoryIndex]
-                                .listOfUsersHaveSeen!
-                          });
-                        }
-    
-                        if (userViewModelBloc.storyList!.length - 1 ==
-                            widget.currentStoryIndex) {
-                          Navigator.of(context)
-                              .popUntil((route) => route.isFirst);
-                        } else {
-                          Navigator.of(context).push(CupertinoPageRoute(
-                            builder: (context) => StoryDetailPage(
-                              story: userViewModelBloc
-                                  .storyList![widget.currentStoryIndex + 1],
-                              currentStoryIndex: widget.currentStoryIndex + 1,
-                            ),
-                          ));
-                        }
-                      }
-                    },
-                    child: Container(
-                      color: Colors.transparent,
-                      height: size.height - (size.height / 5),
-                      width: size.width / 2,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+                  );
+          },
+          indicatorAnimationController: _controller,
+          onPageForward: (newPageIndex) {
+            addSeenList(
+              userViewModelBloc: userViewModelBloc,
+              newPageIndex: newPageIndex,
+            );
+          },
+          onPageLimitReached: () {
+            addSeenList(userViewModelBloc: userViewModelBloc);
+            Navigator.pop(context);
+          },
         ),
       ),
     );
@@ -196,11 +155,29 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
     Duration timeDifference = currentDateTime.difference(storyCreatedAt);
 
     if (timeDifference.inMinutes < 1) {
-      return 'a moment ago';
+      return '0m';
     } else if (timeDifference.inHours < 1) {
-      return '${timeDifference.inMinutes} minutes ago';
+      return '${timeDifference.inMinutes}m';
     } else {
-      return '${timeDifference.inHours} hour ago';
+      return '${timeDifference.inHours}h';
+    }
+  }
+
+  void addSeenList(
+      {required UserViewModelBloc userViewModelBloc, int? newPageIndex}) async {
+    StoryModel? currentStory = newPageIndex != null
+        ? _willUsedList[newPageIndex - 1]
+        : _willUsedList.last;
+
+    if (!currentStory!.listOfUsersHaveSeen!
+            .contains(userViewModelBloc.user!.userID) &&
+        userViewModelBloc.user!.userID != currentStory.user.userID) {
+      currentStory.listOfUsersHaveSeen!.add(userViewModelBloc.user!.userID);
+
+      await _firestoreDB
+          .collection('stories')
+          .doc(currentStory.user.userID)
+          .update({'listOfUsersHaveSeen': currentStory.listOfUsersHaveSeen});
     }
   }
 }

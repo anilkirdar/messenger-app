@@ -12,7 +12,8 @@ import '../models/story_model.dart';
 part 'user_view_model_event.dart';
 part 'user_view_model_state.dart';
 
-class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
+class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState>
+    with ChangeNotifier {
   final UserRepository _userRepository = locator<UserRepository>();
   List<UserModel>? userList;
   List<StoryModel>? storyList;
@@ -127,9 +128,11 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
                 currentUserID: event.currentUserID,
                 otherUserID: event.otherUserID)
             .listen(
-          (messageListFromStream) {
+          (messageListFromStream) async {
             if (messageListFromStream.isNotEmpty) {
               if (messageListFromStream[0] != null && messageList != null) {
+                debugPrint(
+                    "LISTENER CALLED message: ${messageListFromStream[0]?.message}");
                 messageList!.insert(0, messageListFromStream[0]!);
               }
             }
@@ -152,8 +155,7 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState> {
 
     on<AddStoryEvent>((event, emit) async {
       await _userRepository.addStory(
-          newStoryPhoto: event.newStoryPhoto,
-          userID: event.userID);
+          newStoryPhoto: event.newStoryPhoto, userID: event.userID);
       emit(UserViewModelIdleState());
     });
 

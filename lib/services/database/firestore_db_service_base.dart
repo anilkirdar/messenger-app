@@ -30,7 +30,8 @@ abstract class FirestoreDBServiceBase {
 
   Future<void> addStory(
       {required String userID,
-      required String? storyPhotoUrl});
+      required String? storyPhotoUrl,
+      required String fileName});
 
   Future<List<StoryModel>> getStories(
       {required String userID,

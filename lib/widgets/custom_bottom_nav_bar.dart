@@ -22,8 +22,9 @@ class CustomBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoTabScaffold(
+      backgroundColor: Colors.transparent,
       tabBar: CustomTabBar(
-        backgroundColor: Colors.white,
+        // backgroundColor: Colors.white,
         height: MediaQuery.of(context).size.height / 12,
         onTap: (index) {
           onSelectedTab(TabItem.values[index]);
@@ -32,7 +33,7 @@ class CustomBottomNavBar extends StatelessWidget {
           createNavItem(tabItem: TabItem.messages),
           createNavItem(
             tabItem: TabItem.home,
-            inactiveColor: Colors.black87.withOpacity(0.8),
+            inactiveColor: Colors.black87.withAlpha((255*0.8).toInt()),
           ),
           createNavItem(tabItem: TabItem.profile),
         ],
@@ -41,9 +42,7 @@ class CustomBottomNavBar extends StatelessWidget {
         return CupertinoTabView(
           navigatorKey: navigatorKeys[TabItem.values[index]],
           builder: (context) {
-            // Size size = MediaQuery.of(context).size;
-
-            return SafeArea(child: pageCreator[currentTab]!);
+            return pageCreator[currentTab]!;
           },
         );
       },

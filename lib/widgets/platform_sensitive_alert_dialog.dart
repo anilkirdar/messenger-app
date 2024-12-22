@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
+import '../consts/consts.dart';
 import 'platform_sensitive_widget_base.dart';
 
 class PlatformSensitiveAlertDialog extends PlatformSensitiveWidgetBase {
@@ -35,6 +36,7 @@ class PlatformSensitiveAlertDialog extends PlatformSensitiveWidgetBase {
   @override
   Widget buildAndroidWidget(BuildContext context) {
     return AlertDialog(
+      backgroundColor: Consts.backgroundColor,
       title: Text(title),
       content: Text(content),
       actions: _dialogButtons(context),

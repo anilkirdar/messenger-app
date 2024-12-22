@@ -23,7 +23,7 @@ class _TabsBasePageState extends State<TabsBasePage> {
     return {
       TabItem.messages: const MessagesPage(),
       TabItem.home: const HomePage(),
-      TabItem.profile: ProfilePage(user: widget.user,),
+      TabItem.profile: ProfilePage(user: widget.user),
     };
   }
 

@@ -21,6 +21,7 @@ class _MessagesPageState extends State<MessagesPage> {
   @override
   Widget build(BuildContext context) {
     final userViewModelBloc = context.watch<UserViewModelBloc>();
+    final size = MediaQuery.of(context).size;
 
     if (userViewModelBloc.chatListStream == null) {
       userViewModelBloc.add(GetChatsEvent(
@@ -29,20 +30,26 @@ class _MessagesPageState extends State<MessagesPage> {
     }
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Consts.primaryAppColor,
-        elevation: 2,
-        onPressed: () {
-          Navigator.of(context, rootNavigator: true).push(CupertinoPageRoute(
-            builder: (context) => UsersPage(),
-          ));
-        },
-        child: FaIcon(
-          FontAwesomeIcons.plus,
-          color: Colors.black54,
+      backgroundColor: Consts.backgroundColor,
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: size.height/10),
+        child: FloatingActionButton(
+          backgroundColor: Consts.primaryAppColor,
+          splashColor: Colors.transparent,
+          elevation: 2,
+          onPressed: () {
+            Navigator.of(context, rootNavigator: true).push(CupertinoPageRoute(
+              builder: (context) => UsersPage(),
+            ));
+          },
+          child: FaIcon(
+            FontAwesomeIcons.plus,
+            color: Colors.black54,
+          ),
         ),
       ),
       appBar: AppBar(
+        backgroundColor: Consts.backgroundColor,
         title: const Text(
           'Messages',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),

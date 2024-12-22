@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:encrypt/encrypt.dart' as encrypt;
 // import 'package:encrypt/encrypt.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -18,6 +19,7 @@ import 'firestore_db_service_base.dart';
 class FirestoreDBService implements FirestoreDBServiceBase {
   final FirebaseFirestore _firestoreDB = FirebaseFirestore.instance;
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseStorage _firebaseStorage = FirebaseStorage.instance;
   List<UserModel>? userList;
   List<StoryModel>? storyList;
   List<MessageModel>? messageList;
@@ -42,11 +44,11 @@ class FirestoreDBService implements FirestoreDBServiceBase {
 
         await _firestoreDB.collection('users').doc(user.userID).set({
           'userID': userMap['userID'],
-          'email': userMap['email'],
-          'userName': userMap['userName'] ??
+          'email': encryptString(userMap['email']),
+          'userName': encryptString(userMap['userName'] ??
               (userMap['email'] as String)
                       .substring(0, (userMap['email'] as String).indexOf('@')) +
-                  randomNumCreator().toString(),
+                  randomNumCreator().toString()),
           'profilePhotoURL': userMap['profilePhotoURL'] ??
               'https://firebasestorage.googleapis.com/v0/b/messenger-app-8556c.appspot.com/o/blank-profile-picture.png?alt=media&token=c80dcaf1-63ed-43ba-9bf0-fba3e9800501',
           'createdAt': userMap['createdAt'] ?? FieldValue.serverTimestamp(),
@@ -81,7 +83,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
 
       if (users.docs.isEmpty) {
         await _firestoreDB.collection('users').doc(userID).update({
-          'userName': newUserName,
+          'userName': encryptString(newUserName),
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
@@ -169,7 +171,10 @@ class FirestoreDBService implements FirestoreDBServiceBase {
         await _firestoreDB.collection('users').doc(userID).get();
     Map<String, dynamic> userData =
         userSnapshot.data()! as Map<String, dynamic>;
-    return UserModel.fromMap(userData);
+    UserModel user = UserModel.fromMap(userData);
+    user.email = decryptMessage(user.email);
+    user.userName = decryptMessage(user.userName!);
+    return user;
   }
 
   @override
@@ -184,7 +189,9 @@ class FirestoreDBService implements FirestoreDBServiceBase {
 
   @override
   Future<void> addStory(
-      {required String userID, required String? storyPhotoUrl}) async {
+      {required String userID,
+      required String? storyPhotoUrl,
+      required String fileName}) async {
     try {
       if (storyPhotoUrl != null) {
         var docSnapshot =
@@ -193,12 +200,14 @@ class FirestoreDBService implements FirestoreDBServiceBase {
 
         var palleteGenerator = await PaletteGenerator.fromImageProvider(
           NetworkImage(storyPhotoUrl),
-          maximumColorCount: 5,
         );
+
+        print('DOMINANT COLOR SPACE: ${palleteGenerator.dominantColor?.color}');
 
         story.listOfUsersHaveSeen = [];
         story.storyDetailsList!.add({
           'storyPhotoUrl': storyPhotoUrl,
+          'storyPhotoName': fileName,
           'dominantColor': palleteGenerator.dominantColor?.color.value,
           'createdAt': DateTime.now(),
         });
@@ -254,6 +263,13 @@ class FirestoreDBService implements FirestoreDBServiceBase {
 
           if (getTimeDifference(currentStoryDetails['createdAt']) >= 24) {
             storyFromDB.storyDetailsList!.removeAt(i);
+            await _firebaseStorage
+                .ref()
+                .child(userID)
+                .child('story-photos')
+                .child(currentStoryDetails['storyPhotoName'])
+                .delete();
+
             hasAnyChanges = true;
           } else {
             hasAnyChanges = false;
@@ -293,7 +309,6 @@ class FirestoreDBService implements FirestoreDBServiceBase {
         storyList!.insert(0, story);
       }
 
-      debugPrint('STORYLIST: $storyList');
       return storyList!;
     } catch (e) {
       debugPrint('FIRESTOREDBSERVICE getStories ERROR: $e');
@@ -329,6 +344,9 @@ class FirestoreDBService implements FirestoreDBServiceBase {
         Map<String, dynamic> userObject =
             userDoc.data() as Map<String, dynamic>;
         UserModel userFromDB = UserModel.fromMap(userObject);
+        userFromDB.email = decryptMessage(userFromDB.email);
+        userFromDB.userName = decryptMessage(userFromDB.userName!);
+
         bool hasInUserList = findFromUserList(userFromDB.userID);
 
         if (userFromDB.userID != currentUser.userID && !hasInUserList) {
@@ -385,12 +403,14 @@ class FirestoreDBService implements FirestoreDBServiceBase {
         Map<String, dynamic> messageObject =
             messageDoc.data() as Map<String, dynamic>;
 
-        messageObject.update(
-          'message',
-          (value) => decryptMessage(encryptedBase64: messageObject['message']),
-        );
+        // messageObject.update(
+        //   'message',
+        //   (value) => decryptMessage(messageObject['message']),
+        // );
 
         MessageModel messageFromDB = MessageModel.fromMap(messageObject);
+        messageFromDB.message = decryptMessage(messageFromDB.message);
+
         bool hasInMessageList = findFromMessageList(messageFromDB.messageID!);
 
         if (!hasInMessageList) {
@@ -427,7 +447,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
       Map<String, dynamic> messageMap = message.toMap();
       messageMap.update(
         'message',
-        (value) => encryptMessage(message: messageMap['message']),
+        (value) => encryptString(messageMap['message']),
       );
       messageMap.addEntries({'messageID': messageID}.entries);
 
@@ -514,8 +534,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
             chat.messageLastSeenAt = timeago.format(
               serverTime.subtract(timeDifference),
             ); // türkçeleştirmek için locale parametresini kullan 'tr' gibi
-            chat.lastMessage =
-                decryptMessage(encryptedBase64: chat.lastMessage);
+            chat.lastMessage = decryptMessage(chat.lastMessage);
 
             return chat;
           },
@@ -603,11 +622,10 @@ class FirestoreDBService implements FirestoreDBServiceBase {
       (querySnapshot) => querySnapshot.docs.map(
         (queryDocSnapshot) {
           Map<String, dynamic> messageMap = queryDocSnapshot.data();
-          messageMap.update(
-            'message',
-            (value) => decryptMessage(encryptedBase64: messageMap['message']),
-          );
+
           MessageModel message = MessageModel.fromMap(messageMap);
+          message.message = decryptMessage(message.message);
+
           bool messageHasInMessageList =
               findFromMessageList(message.messageID!);
 
@@ -650,13 +668,13 @@ class FirestoreDBService implements FirestoreDBServiceBase {
   //   return decrypted;
   // }
 
-  String encryptMessage({required String message}) {
-    String encoded = stringToBase64.encode(message);
+  String encryptString(String a) {
+    String encoded = stringToBase64.encode(a);
 
     return encoded;
   }
 
-  String decryptMessage({required String encryptedBase64}) {
+  String decryptMessage(String encryptedBase64) {
     String decoded = stringToBase64.decode(encryptedBase64);
 
     return decoded;

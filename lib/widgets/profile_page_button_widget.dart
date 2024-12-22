@@ -34,7 +34,7 @@ class ProfilePageButtonWidget extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: iconColor.withOpacity(0.2),
+                  backgroundColor: iconColor.withAlpha((255*0.2).toInt()),
                   radius: 24,
                   child: FaIcon(
                     iconData,

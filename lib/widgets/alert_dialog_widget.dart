@@ -1,5 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+
+import '../consts/consts.dart';
 
 class AlertDialogWidget extends StatelessWidget {
   final String content;
@@ -24,6 +25,7 @@ class AlertDialogWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      backgroundColor: Consts.backgroundColor,
       actionsPadding: EdgeInsets.zero,
       title: Text(
         content,
@@ -41,17 +43,19 @@ class AlertDialogWidget extends StatelessWidget {
     buttons.add(const Divider(height: 0, color: Colors.black12));
     buttons.add(
       Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: CupertinoDialogAction(
-          onPressed: () {
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: GestureDetector(
+          onTap: () {
             Navigator.pop(context, true);
           },
-          child: Text(
-            mainButtonText,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: mainButtonTextColor,
+          child: Center(
+            child: Text(
+              mainButtonText,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: mainButtonTextColor,
+              ),
             ),
           ),
         ),
@@ -62,14 +66,16 @@ class AlertDialogWidget extends StatelessWidget {
       buttons.add(const Divider(height: 0, color: Colors.black12));
       buttons.add(
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: CupertinoDialogAction(
-            onPressed: () {
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: GestureDetector(
+            onTap: () {
               Navigator.pop(context, false);
             },
-            child: Text(
-              cancelButtonText!,
-              style: const TextStyle(fontSize: 18, color: Colors.black87),
+            child: Center(
+              child: Text(
+                cancelButtonText!,
+                style: const TextStyle(fontSize: 18, color: Colors.black87),
+              ),
             ),
           ),
         ),

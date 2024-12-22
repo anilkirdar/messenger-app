@@ -48,10 +48,16 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     if (userViewModelBloc.state is UserViewModelBusyState) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator(color: Consts.inactiveColor)));
+      return const Scaffold(
+        backgroundColor: Consts.backgroundColor,
+        body: Center(
+          child: CircularProgressIndicator(color: Consts.inactiveColor),
+        ),
+      );
     } else {
       if (userViewModelBloc.generalErrorMessage != null) {
         return Scaffold(
+          backgroundColor: Consts.backgroundColor,
           body: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -87,11 +93,11 @@ class _SignUpPageState extends State<SignUpPage> {
             _initialPass = '';
           },
           child: Scaffold(
+            backgroundColor: Consts.backgroundColor,
             resizeToAvoidBottomInset: true,
-            backgroundColor: Colors.white,
             appBar: AppBar(
               elevation: 0,
-              backgroundColor: Colors.white,
+              backgroundColor: Consts.backgroundColor,
               leading: IconButton(
                 onPressed: () {
                   Navigator.pop(context);

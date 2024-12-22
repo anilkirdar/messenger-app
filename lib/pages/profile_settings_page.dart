@@ -84,7 +84,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     Size size = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: Consts.backgroundColor,
       appBar: AppBar(
+        backgroundColor: Consts.backgroundColor,
         title: const Text(
           'Profile Settings',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
@@ -92,6 +94,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         leading: Padding(
           padding: const EdgeInsets.only(left: 20),
           child: IconButton(
+            highlightColor: Colors.transparent,
             onPressed: () {
               Navigator.of(context).pop();
             },
@@ -317,7 +320,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
       cancelButtonText: 'Cancel',
     ).showAlertDialog(context);
 
-    if (result!) {
+    if (result!) { 
       userViewModelBloc.add(SignOutEvent());
       // ignore: use_build_context_synchronously
       Navigator.of(context).popUntil((route) => route.isFirst);
