@@ -1,8 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../consts/consts.dart';
 import '../models/message_model.dart';
@@ -35,7 +33,7 @@ class MessageBubble extends StatelessWidget {
           children: [
             if (!message.isFromMe)
               CircleAvatar(
-                backgroundColor: Colors.grey.withAlpha(40),
+                backgroundColor: Colors.grey.withValues(alpha: 0.4),
                 backgroundImage:
                     CachedNetworkImageProvider(otherUser.profilePhotoURL!),
                 radius: 16,
@@ -51,7 +49,7 @@ class MessageBubble extends StatelessWidget {
                     (MediaQuery.of(context).size.width / 3),
               ),
               decoration: BoxDecoration(
-                color: Consts.quaternaryAppColor,
+                color: Consts.primaryAppColor,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Padding(
@@ -64,26 +62,30 @@ class MessageBubble extends StatelessWidget {
                     Text(
                       message.message,
                       maxLines: null,
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           _dateTimeFormatter(
-                              message.createdAt ?? Timestamp.now()),
-                          style: const TextStyle(
+                              message.createdAt?.toDate() ?? DateTime.now()),
+                          style: GoogleFonts.poppins(
                             color: Colors.white54,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
                         ),
-                        const SizedBox(width: 5),
-                        const FaIcon(
-                          FontAwesomeIcons.check,
-                          size: 14,
-                          color: Colors.white54,
-                        ),
+                        // const SizedBox(width: 5),
+                        // const FaIcon(
+                        //   FontAwesomeIcons.check,
+                        //   size: 14,
+                        //   color: Colors.black54,
+                        // ),
                       ],
                     ),
                   ],
@@ -92,7 +94,7 @@ class MessageBubble extends StatelessWidget {
             ),
             if (message.isFromMe)
               CircleAvatar(
-                backgroundColor: Colors.grey.withAlpha(40),
+                backgroundColor: Colors.grey.withValues(alpha: 0.4),
                 backgroundImage:
                     CachedNetworkImageProvider(currentUser.profilePhotoURL!),
                 radius: 16,
@@ -103,10 +105,12 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  String _dateTimeFormatter(Timestamp timestamp) {
-    DateTime dateTime = timestamp.toDate();
-    DateFormat formatter = DateFormat.Hm();
-    var formattedTime = formatter.format(dateTime);
-    return formattedTime;
+  String _dateTimeFormatter(DateTime dateTime) {
+    String formattedHour =
+        dateTime.hour < 10 ? '0${dateTime.hour}' : dateTime.hour.toString();
+    String formattedMinute = dateTime.minute < 10
+        ? '0${dateTime.minute}'
+        : dateTime.minute.toString();
+    return '$formattedHour.$formattedMinute';
   }
 }

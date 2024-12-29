@@ -8,8 +8,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:palette_generator/palette_generator.dart';
-import 'package:timeago/timeago.dart' as timeago;
+// import 'package:timeago/timeago.dart' as timeago;
 import '../../models/chat_model.dart';
 import '../../models/message_model.dart';
 import '../../models/story_model.dart';
@@ -35,16 +36,28 @@ class FirestoreDBService implements FirestoreDBServiceBase {
   }
 
   @override
-  Future<bool> saveUser(UserModel? user) async {
+  Future<bool> saveUser({required UserModel? user, String? pass}) async {
     try {
       setNull();
 
       if (user != null) {
         Map<String, dynamic> userMap = user.toMap();
+        if (pass != null || pass != '') {
+          userMap.update(
+            'pass',
+            (value) {
+              return pass;
+            },
+          );
+        } else {
+          userMap.update('signType', (value) => 'google');
+        }
 
         await _firestoreDB.collection('users').doc(user.userID).set({
+          'signType': userMap['signType'],
           'userID': userMap['userID'],
           'email': encryptString(userMap['email']),
+          'pass': encryptString(userMap['pass']),
           'userName': encryptString(userMap['userName'] ??
               (userMap['email'] as String)
                       .substring(0, (userMap['email'] as String).indexOf('@')) +
@@ -119,21 +132,30 @@ class FirestoreDBService implements FirestoreDBServiceBase {
     try {
       await _firestoreDB.collection('users').doc(currentUser.userID).delete();
       await _firestoreDB.collection('server').doc(currentUser.userID).delete();
-      await _firestoreDB.collection('stories').doc(currentUser.userID).delete();
+      // await _firestoreDB.collection('stories').doc(currentUser.userID).delete();
       await _firestoreDB
           .collection('chats')
-          .where('fromWho', isEqualTo: currentUser.toMap())
+          .where('fromWho.userID', isEqualTo: currentUser.toMap())
           .get()
           .then(
-        (querySnapshot) {
+        (querySnapshot) async {
           for (DocumentSnapshot docSnapshot in querySnapshot.docs) {
-            docSnapshot.reference.delete();
+            await docSnapshot.reference.delete();
           }
         },
       );
 
       await _firebaseAuth.currentUser!.delete();
       return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == "requires-recent-login") {
+        bool result = await _reauthenticateAndDelete(currentUser: currentUser);
+        return result;
+      } else {
+        debugPrint(
+            'FIRESTOREDBSERVICE deleteUser FirebaseAuthException ERROR: $e');
+        return false;
+      }
     } catch (e) {
       debugPrint('FIRESTOREDBSERVICE deleteUser ERROR: $e');
       return false;
@@ -150,10 +172,29 @@ class FirestoreDBService implements FirestoreDBServiceBase {
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        await _firestoreDB.collection('stories').doc(userID).update({
-          'profilePhotoURL': newProfilePhotoURL,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+        await _firestoreDB
+            .collection('chats')
+            .where('fromWho.userID', isEqualTo: userID)
+            .get()
+            .then(
+          (querySnapshot) {
+            for (DocumentSnapshot docSnapshot in querySnapshot.docs) {
+              docSnapshot.reference.update({
+                'toWho': {
+                  {
+                    'profilePhotoURL': newProfilePhotoURL,
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  }
+                }
+              });
+            }
+          },
+        );
+
+        // await _firestoreDB.collection('stories').doc(userID).update({
+        //   'profilePhotoURL': newProfilePhotoURL,
+        //   'updatedAt': FieldValue.serverTimestamp(),
+        // });
 
         return true;
       } else {
@@ -169,8 +210,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
   Future<UserModel> readUser(String userID) async {
     DocumentSnapshot userSnapshot =
         await _firestoreDB.collection('users').doc(userID).get();
-    Map<String, dynamic> userData =
-        userSnapshot.data()! as Map<String, dynamic>;
+    Map<String, dynamic> userData = userSnapshot.data() as Map<String, dynamic>;
     UserModel user = UserModel.fromMap(userData);
     user.email = decryptMessage(user.email);
     user.userName = decryptMessage(user.userName!);
@@ -233,7 +273,6 @@ class FirestoreDBService implements FirestoreDBServiceBase {
       bool hasAnyChanges = false;
 
       if (storyList == null) {
-        // TODO QUERY HATASI VAR AMK
         querySnapshot = await _firestoreDB
             .collection('stories')
             .where('storyDetailsList', isNotEqualTo: [])
@@ -265,7 +304,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
             storyFromDB.storyDetailsList!.removeAt(i);
             await _firebaseStorage
                 .ref()
-                .child(userID)
+                .child(storyFromDB.user.userID)
                 .child('story-photos')
                 .child(currentStoryDetails['storyPhotoName'])
                 .delete();
@@ -385,7 +424,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
             .collection('chats')
             .doc('$currentUserID--$otherUserID')
             .collection('messages')
-            .orderBy('createdAt', descending: true)
+            .orderBy('createdAt', descending: false)
             .limit(countOfWillBeFetchedMessageCount)
             .get();
       } else {
@@ -393,7 +432,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
             .collection('chats')
             .doc('$currentUserID--$otherUserID')
             .collection('messages')
-            .orderBy('createdAt', descending: true)
+            .orderBy('createdAt', descending: false)
             .startAfter([message!.createdAt])
             .limit(countOfWillBeFetchedMessageCount)
             .get();
@@ -435,21 +474,27 @@ class FirestoreDBService implements FirestoreDBServiceBase {
   @override
   Future<bool?> saveChatMessage(
       {required MessageModel message,
-      required String currentUserID,
+      required UserModel currentUser,
+      required UserModel otherUser,
       required ValueChanged<bool> resultCallBack}) async {
     try {
       String messageID = _firestoreDB.collection('chats').doc().id;
-      String currentUserDocID =
-          '${message.fromWho.userID}--${message.toWho.userID}';
-      String otherUserDocID =
-          '${message.toWho.userID}--${message.fromWho.userID}';
+      String currentUserDocID = '${currentUser.userID}--${otherUser.userID}';
+      String otherUserDocID = '${otherUser.userID}--${currentUser.userID}';
 
       Map<String, dynamic> messageMap = message.toMap();
-      messageMap.update(
-        'message',
-        (value) => encryptString(messageMap['message']),
-      );
+
+      messageMap['message'] = encryptString(messageMap['message']);
+      messageMap['createdAt'] = FieldValue.serverTimestamp();
       messageMap.addEntries({'messageID': messageID}.entries);
+
+      Map<String, dynamic> currentUserMap = currentUser.toMap();
+      currentUserMap['userName'] = encryptString(currentUserMap['userName']);
+      currentUserMap['email'] = encryptString(currentUserMap['email']);
+
+      Map<String, dynamic> otherUserMap = otherUser.toMap();
+      otherUserMap['userName'] = encryptString(otherUserMap['userName']);
+      otherUserMap['email'] = encryptString(otherUserMap['email']);
 
       await _firestoreDB
           .collection('chats')
@@ -458,21 +503,17 @@ class FirestoreDBService implements FirestoreDBServiceBase {
           .doc(messageID)
           .set({
         'messageID': messageID,
-        'fromWho': messageMap['fromWho'],
-        'toWho': messageMap['toWho'],
         'message': messageMap['message'],
         'isFromMe': messageMap['isFromMe'],
         'itBeenSeen': false,
-        'createdAt': messageMap['createdAt'] ?? FieldValue.serverTimestamp(),
+        'createdAt': messageMap['createdAt'],
       });
 
       await _firestoreDB.collection('chats').doc(currentUserDocID).set({
-        'fromWho': messageMap['fromWho'],
-        'toWho': messageMap['toWho'],
-        'lastMessage': messageMap['message'],
-        'lastMessageFromWho': 'me',
-        'messageLastSeenAt': messageMap['messageLastSeenAt'],
-        'createdAt': messageMap['createdAt'] ?? FieldValue.serverTimestamp(),
+        'fromWho': currentUserMap,
+        'toWho': otherUserMap,
+        'lastMessage': messageMap,
+        'lastMessageFromWho': encryptString('me'),
       });
 
       messageMap.update('isFromMe', (value) => false);
@@ -484,21 +525,17 @@ class FirestoreDBService implements FirestoreDBServiceBase {
           .doc(messageID)
           .set({
         'messageID': messageID,
-        'fromWho': messageMap['fromWho'],
-        'toWho': messageMap['toWho'],
         'message': messageMap['message'],
         'isFromMe': messageMap['isFromMe'],
         'itBeenSeen': false,
-        'createdAt': messageMap['createdAt'] ?? FieldValue.serverTimestamp(),
+        'createdAt': messageMap['createdAt'],
       });
 
       await _firestoreDB.collection('chats').doc(otherUserDocID).set({
-        'fromWho': messageMap['toWho'],
-        'toWho': messageMap['fromWho'],
-        'lastMessage': messageMap['message'],
-        'lastMessageFromWho': messageMap['fromWho']['userName'],
-        'messageLastSeenAt': messageMap['messageLastSeenAt'],
-        'createdAt': messageMap['createdAt'] ?? FieldValue.serverTimestamp(),
+        'fromWho': otherUserMap,
+        'toWho': currentUserMap,
+        'lastMessage': messageMap,
+        'lastMessageFromWho': encryptString(otherUser.userName!),
       });
 
       resultCallBack(true);
@@ -512,15 +549,15 @@ class FirestoreDBService implements FirestoreDBServiceBase {
 
   @override
   Future<Stream<List<ChatModel>>> getChatListStream(
-      {required UserModel currentUser,
+      {required String currentUserID,
       required int countOfWillBeFetchedChatCount}) async {
     try {
-      DateTime serverTime = await fetchTime(userID: currentUser.userID);
+      DateTime serverTime = await fetchTime(userID: currentUserID);
 
       var snapshot = _firestoreDB
           .collection('chats')
-          .where('fromWho', isEqualTo: currentUser.toMap())
-          .orderBy('createdAt', descending: true)
+          .where('fromWho.userID', isEqualTo: currentUserID)
+          .orderBy('lastMessage.createdAt', descending: true)
           .limit(countOfWillBeFetchedChatCount)
           .snapshots();
 
@@ -528,13 +565,21 @@ class FirestoreDBService implements FirestoreDBServiceBase {
         (querySnapshot) => querySnapshot.docs.map(
           (queryDocSnapshot) {
             ChatModel chat = ChatModel.fromMap(queryDocSnapshot.data());
-            Duration timeDifference =
-                serverTime.difference(chat.createdAt!.toDate());
+            chat.fromWho.userName = decryptMessage(chat.fromWho.userName!);
+            chat.toWho.userName = decryptMessage(chat.toWho.userName!);
+            chat.fromWho.email = decryptMessage(chat.fromWho.email);
+            chat.toWho.email = decryptMessage(chat.toWho.email);
+            chat.lastMessage.message = decryptMessage(chat.lastMessage.message);
+            chat.lastMessageFromWho = decryptMessage(chat.lastMessageFromWho);
+
+            Duration timeDifference = serverTime.difference(
+                chat.lastMessage.createdAt?.toDate() ?? DateTime.now());
             // timeago.setLocaleMessages('tr', timeago.TrMessages());
-            chat.messageLastSeenAt = timeago.format(
-              serverTime.subtract(timeDifference),
-            ); // türkçeleştirmek için locale parametresini kullan 'tr' gibi
-            chat.lastMessage = decryptMessage(chat.lastMessage);
+            // chat.lastMessageSentAt = timeago.format(
+            //   serverTime.subtract(timeDifference),
+            // ); // türkçeleştirmek için locale parametresini kullan 'tr' gibi
+            chat.lastMessageSentAt = getlastMessageSentAt(
+                chat.lastMessage.createdAt, timeDifference);
 
             return chat;
           },
@@ -625,6 +670,7 @@ class FirestoreDBService implements FirestoreDBServiceBase {
 
           MessageModel message = MessageModel.fromMap(messageMap);
           message.message = decryptMessage(message.message);
+          message.createdAt = message.createdAt ?? Timestamp.now();
 
           bool messageHasInMessageList =
               findFromMessageList(message.messageID!);
@@ -640,17 +686,22 @@ class FirestoreDBService implements FirestoreDBServiceBase {
   @override
   Stream<List<dynamic>?> currentUserStoryListener(
       {required String currentUserID}) {
-    var snapshot =
-        _firestoreDB.collection('stories').doc(currentUserID).snapshots();
+    try {
+      var snapshot =
+          _firestoreDB.collection('stories').doc(currentUserID).snapshots();
 
-    return snapshot.map(
-      (queryDocSnapshot) {
-        Map<String, dynamic> storyMap = queryDocSnapshot.data()!;
-        StoryModel storyFromDB = StoryModel.fromMap(storyMap);
+      return snapshot.map(
+        (queryDocSnapshot) {
+          Map<String, dynamic> storyMap = queryDocSnapshot.data()!;
+          StoryModel storyFromDB = StoryModel.fromMap(storyMap);
 
-        return storyFromDB.storyDetailsList;
-      },
-    );
+          return storyFromDB.storyDetailsList;
+        },
+      );
+    } catch (e) {
+      print('FIRESTOREDBSERVICE currentUserStoryListener ERROR: $e');
+      return Stream.empty();
+    }
   }
 
   // String encryptMessage({required String message}) {
@@ -686,5 +737,49 @@ class FirestoreDBService implements FirestoreDBServiceBase {
     Duration timeDifference = currentDateTime.difference(storyCreatedAt);
 
     return timeDifference.inHours;
+  }
+
+  Future<bool> _reauthenticateAndDelete(
+      {required UserModel currentUser}) async {
+    try {
+      if (currentUser.signType == 'google') {
+        await _firebaseAuth.currentUser!
+            .reauthenticateWithProvider(GoogleAuthProvider());
+      } else if (currentUser.signType == 'email') {
+        await _firebaseAuth.currentUser!.reauthenticateWithCredential(
+            EmailAuthProvider.credential(
+                email: currentUser.email, password: currentUser.pass));
+      }
+
+      await _firebaseAuth.currentUser!.delete();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      debugPrint(
+          'FIRESTOREDBSERVICE _reauthenticateAndDelete FirebaseAuthException ERROR: ${e.code}');
+      return false;
+    } catch (e) {
+      debugPrint('FIRESTOREDBSERVICE _reauthenticateAndDelete ERROR: $e');
+      return false;
+    }
+  }
+
+  String? getlastMessageSentAt(Timestamp? createdAt, Duration timeDifference) {
+    DateTime dateTime = createdAt?.toDate() ?? DateTime.now();
+
+    if (timeDifference.inDays == 1) {
+      return 'Yesterday';
+    } else if (timeDifference.inDays > 1 && timeDifference.inDays < 7) {
+      String dayName = DateFormat.EEEE().format(dateTime);
+      return dayName;
+    } else if (timeDifference.inDays > 7) {
+      return '${dateTime.month}/${dateTime.day}/${dateTime.year.toString().substring(2)}';
+    } else {
+      String formattedHour =
+          dateTime.hour < 10 ? '0${dateTime.hour}' : dateTime.hour.toString();
+      String formattedMinute = dateTime.minute < 10
+          ? '0${dateTime.minute}'
+          : dateTime.minute.toString();
+      return '$formattedHour:$formattedMinute';
+    }
   }
 }

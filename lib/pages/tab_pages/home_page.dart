@@ -48,9 +48,7 @@ class _HomePageState extends State<HomePage> {
     Size size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Consts.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Consts.backgroundColor,
         title: const Text(
           'Chatrix',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),

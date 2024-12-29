@@ -1,8 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../consts/consts.dart';
-import '../tab_items.dart';
+import '../../consts/consts.dart';
+import '../../pages/tab_pages/tab_items.dart';
 import 'custom_tab_bar.dart';
 
 // ignore: must_be_immutable
@@ -21,19 +20,21 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Size size = MediaQuery.of(context).size;
+
     return CupertinoTabScaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Consts.backgroundColor,
       tabBar: CustomTabBar(
-        // backgroundColor: Colors.white,
-        height: MediaQuery.of(context).size.height / 12,
+        // backgroundColor: Consts.backgroundColor,
+        height: size.height / 10,
         onTap: (index) {
           onSelectedTab(TabItem.values[index]);
         },
         items: [
-          createNavItem(tabItem: TabItem.messages),
+          createNavItem(tabItem: TabItem.directory),
           createNavItem(
-            tabItem: TabItem.home,
-            inactiveColor: Colors.black87.withAlpha((255*0.8).toInt()),
+            tabItem: TabItem.chats,
+            // inactiveColor: Colors.black87.withAlpha((255 * 0.8).toInt()),
           ),
           createNavItem(tabItem: TabItem.profile),
         ],
@@ -52,13 +53,21 @@ class CustomBottomNavBar extends StatelessWidget {
   BottomNavigationBarItem createNavItem(
       {required TabItem tabItem,
       Color inactiveColor = CupertinoColors.inactiveGray,
-      Color activeColor = Consts.tertiaryAppColor}) {
+      Color activeColor = Consts.primaryAppColor}) {
     final TabItemData currentTab = TabItemData.allTabs[tabItem]!;
 
     return BottomNavigationBarItem(
       label: currentTab.title,
-      icon: FaIcon(currentTab.icon, color: inactiveColor),
-      activeIcon: FaIcon(currentTab.icon, color: activeColor),
+      icon: FaIcon(
+        currentTab.inactiveIcon,
+        color: inactiveColor,
+        size: 32,
+      ),
+      activeIcon: FaIcon(
+        currentTab.activeIcon,
+        color: activeColor,
+        size: 32,
+      ),
     );
   }
 }

@@ -14,15 +14,13 @@ class GetUsersEvent extends UserViewModelEvent {
 }
 
 class GetMessagesEvent extends UserViewModelEvent {
-  final String currentUserID;
   final String otherUserID;
   final MessageModel? message;
   final int countOfWillBeFetchedMessageCount;
   final bool isInitFunction;
 
   GetMessagesEvent(
-      {required this.currentUserID,
-      required this.otherUserID,
+      {required this.otherUserID,
       required this.message,
       required this.countOfWillBeFetchedMessageCount,
       this.isInitFunction = false});
@@ -31,18 +29,20 @@ class GetMessagesEvent extends UserViewModelEvent {
 class SaveChatMessageEvent extends UserViewModelEvent {
   final MessageModel message;
   final ValueChanged<bool> resultCallBack;
+  final UserModel otherUser;
 
-  SaveChatMessageEvent({required this.resultCallBack, required this.message});
+  SaveChatMessageEvent(
+      {required this.message,
+      required this.resultCallBack,
+      required this.otherUser});
 }
 
 class ConvertErrorStateEvent extends UserViewModelEvent {}
 
 class GetChatsEvent extends UserViewModelEvent {
-  final UserModel currentUser;
   final int countOfWillBeFetchedChatCount;
 
-  GetChatsEvent(
-      {required this.currentUser, required this.countOfWillBeFetchedChatCount});
+  GetChatsEvent({required this.countOfWillBeFetchedChatCount});
 }
 
 class AddStoryEvent extends UserViewModelEvent {
@@ -64,39 +64,33 @@ class GetStoriesEvent extends UserViewModelEvent {
 }
 
 class UpdateUserNameEvent extends UserViewModelEvent {
-  final String userID;
   final String newUserName;
   final ValueChanged<bool> resultCallBack;
 
   UpdateUserNameEvent({
-    required this.userID,
     required this.newUserName,
     required this.resultCallBack,
   });
 }
 
 class UpdateUserPassEvent extends UserViewModelEvent {
-  final String userID;
   final String newPass;
 
   UpdateUserPassEvent({
-    required this.userID,
     required this.newPass,
   });
 }
 
 class DeleteUserEvent extends UserViewModelEvent {
-  final UserModel currentUser;
+  final ValueChanged<bool> resultCallBack;
 
-  DeleteUserEvent({required this.currentUser});
+  DeleteUserEvent({required this.resultCallBack});
 }
 
 class UpdateUserProfilePhotoEvent extends UserViewModelEvent {
-  final String userID;
   final XFile? newProfilePhoto;
 
   UpdateUserProfilePhotoEvent({
-    required this.userID,
     required this.newProfilePhoto,
   });
 }

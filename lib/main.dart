@@ -28,6 +28,24 @@ class MyApp extends StatelessWidget {
       create: (context) => UserViewModelBloc()..add(CurrentUserEvent()),
       child: MaterialApp(
         title: 'Chatrix',
+        theme: ThemeData(
+          primaryColor: Consts.primaryAppColor,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Consts.backgroundColor,
+            elevation: 0,
+            iconTheme: IconThemeData(color: Colors.black87),
+          ),
+          scaffoldBackgroundColor: Consts.backgroundColor,
+          dialogBackgroundColor: Consts.backgroundColor,
+          buttonTheme: ButtonThemeData(
+            buttonColor: Consts.primaryAppColor,
+          ),
+          textSelectionTheme: TextSelectionThemeData(
+            cursorColor: Consts.primaryAppColor,
+            selectionHandleColor: Consts.primaryAppColor,
+            selectionColor: Colors.blue.withValues(alpha: 0.5),
+          ),
+        ),
         // theme: ThemeData(
         //   colorScheme: ColorScheme(
         //     primary: Colors.black87,
@@ -41,12 +59,6 @@ class MyApp extends StatelessWidget {
         //     brightness: Brightness.light,
         //   ),
         // ),
-        theme: ThemeData(
-          textSelectionTheme: TextSelectionThemeData(
-            cursorColor: Consts.primaryAppColor,
-            selectionHandleColor: Consts.primaryAppColor,
-          ),
-        ),
         debugShowCheckedModeBanner: false,
         home: const LandingPage(),
       ),

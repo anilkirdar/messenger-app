@@ -3,9 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import '../../consts/consts.dart';
 import '../../models/user_model.dart';
-import '../profile_settings_page.dart';
+import 'profile_settings_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final UserModel user;
@@ -21,9 +20,7 @@ class _ProfilePageState extends State<ProfilePage> {
     Size size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Consts.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Consts.backgroundColor,
         title: Text(
           widget.user.userName!,
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
@@ -40,8 +37,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 ))
                     .then(
                   (value) {
-                    if (value) {
-                      setState(() {});
+                    if (value != null) {
+                      if (value) {
+                        setState(() {});
+                      }
                     }
                   },
                 );

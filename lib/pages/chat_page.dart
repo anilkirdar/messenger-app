@@ -1,14 +1,17 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 import '../bloc/user_view_model_bloc.dart';
 import '../consts/consts.dart';
 import '../locator.dart';
 import '../models/message_model.dart';
 import '../models/user_model.dart';
 import '../repository/user_repository.dart';
+import '../services/notification_service.dart';
 import '../widgets/message_bubble.dart';
 
 class ChatPage extends StatefulWidget {
@@ -69,12 +72,36 @@ class _ChatPageState extends State<ChatPage> {
     _messageList = userViewModelBloc.messageList;
 
     return Scaffold(
-      backgroundColor: Consts.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Consts.backgroundColor,
-        title: Text(
-          widget.otherUser.userName!,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+        backgroundColor: Consts.inactiveColor.withValues(alpha: 0.1),
+        title: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: Colors.grey.withValues(alpha: 0.4),
+              backgroundImage:
+                  CachedNetworkImageProvider(widget.otherUser.profilePhotoURL!),
+              radius: 16,
+            ),
+            SizedBox(width: 10),
+            Text(
+              widget.otherUser.userName!,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+            ),
+          ],
+        ),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 15),
+          child: IconButton(
+            highlightColor: Colors.transparent,
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            icon: Icon(
+              Icons.arrow_back_ios,
+              color: Consts.primaryAppColor,
+              size: 30,
+            ),
+          ),
         ),
       ),
       body: Center(
@@ -87,27 +114,32 @@ class _ChatPageState extends State<ChatPage> {
                       child: CircularProgressIndicator(
                           color: Consts.inactiveColor))
                   : _messageList!.isNotEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: StreamBuilder(
-                            stream: _userRepository.messageListener(
-                              currentUserID: widget.currentUser.userID,
-                              otherUserID: widget.otherUser.userID,
-                            ),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasData) {
-                                return ListView.builder(
+                      ? StreamBuilder(
+                          stream: _userRepository.messageListener(
+                            currentUserID: widget.currentUser.userID,
+                            otherUserID: widget.otherUser.userID,
+                          ),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              return Padding(
+                                padding: EdgeInsets.zero,
+                                child: ListView.builder(
                                   itemCount: _messageList!.length + 1,
                                   reverse: true,
                                   controller: _scrollController,
                                   itemBuilder: (context, index) {
+                                    final reversedIndex =
+                                        _messageList!.length - 1 - index;
+
                                     if (index == _messageList!.length) {
                                       if (userViewModelBloc.state
                                               is UserViewModelMessageDBBusyState &&
                                           _hasMore) {
                                         return const Padding(
                                           padding: EdgeInsets.only(
-                                              bottom: 12, top: 6),
+                                            bottom: 12,
+                                            top: 6,
+                                          ),
                                           child: Align(
                                             widthFactor: 1,
                                             child: CircularProgressIndicator(
@@ -120,54 +152,50 @@ class _ChatPageState extends State<ChatPage> {
                                       }
                                     } else {
                                       MessageModel message =
-                                          _messageList![index];
+                                          _messageList![reversedIndex];
 
-                                      return MessageBubble(
-                                        message: message,
-                                        currentUser: widget.currentUser,
-                                        otherUser: widget.otherUser,
+                                      DateTime messageTime =
+                                          message.createdAt!.toDate();
+
+                                      DateTime? previousMessageTime =
+                                          reversedIndex > 0
+                                              ? _messageList![reversedIndex - 1]
+                                                  .createdAt!
+                                                  .toDate()
+                                              : null;
+
+                                      bool showDateHeader =
+                                          previousMessageTime == null ||
+                                              getFormattedDate(messageTime) !=
+                                                  getFormattedDate(
+                                                      previousMessageTime);
+
+                                      return Column(
+                                        children: [
+                                          if (showDateHeader)
+                                            Text(
+                                              getFormattedDate(messageTime),
+                                              style: TextStyle(
+                                                color: Colors.black54,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          MessageBubble(
+                                            message: message,
+                                            currentUser: widget.currentUser,
+                                            otherUser: widget.otherUser,
+                                          ),
+                                        ],
                                       );
                                     }
                                   },
-                                );
-                              } else {
-                                return const SizedBox.shrink();
-                              }
-                            },
-                          ),
-                          // child: ListView.builder(
-                          //   itemCount: _messageList!.length + 1,
-                          //   reverse: true,
-                          //   controller: _scrollController,
-                          //   itemBuilder: (context, index) {
-                          //     if (index == _messageList!.length) {
-                          //       if (userViewModelBloc.state
-                          //               is UserViewModelMessageDBBusyState &&
-                          //           _hasMore) {
-                          //         return const Padding(
-                          //           padding:
-                          //               EdgeInsets.only(bottom: 12, top: 6),
-                          //           child: Align(
-                          //             widthFactor: 1,
-                          //             child: CircularProgressIndicator(
-                          //                 color: Consts.inactiveColor),
-                          //           ),
-                          //         );
-                          //       } else {
-                          //         _hasMore = false;
-                          //         return const SizedBox.shrink();
-                          //       }
-                          //     } else {
-                          //       MessageModel message = _messageList![index];
-
-                          //       return MessageBubble(
-                          //         message: message,
-                          //         currentUser: widget.currentUser,
-                          //         otherUser: widget.otherUser,
-                          //       );
-                          //     }
-                          //   },
-                          // ),
+                                ),
+                              );
+                            } else {
+                              return const SizedBox.shrink();
+                            }
+                          },
                         )
                       : Center(
                           child: Column(
@@ -214,7 +242,7 @@ class _ChatPageState extends State<ChatPage> {
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     child: FloatingActionButton(
                       elevation: 0,
-                      backgroundColor: Consts.tertiaryAppColor,
+                      backgroundColor: Consts.primaryAppColor,
                       child: const FaIcon(
                         FontAwesomeIcons.arrowUp,
                         size: 35,
@@ -223,22 +251,26 @@ class _ChatPageState extends State<ChatPage> {
                       onPressed: () {
                         if (_messageController.text.trim().isNotEmpty) {
                           MessageModel message = MessageModel(
-                            fromWho: widget.currentUser,
-                            toWho: widget.otherUser,
-                            message: _messageController.text.trim(),
-                          );
+                              message: _messageController.text.trim());
 
                           _messageController.clear();
 
                           userViewModelBloc.add(
                             SaveChatMessageEvent(
                               message: message,
+                              otherUser: widget.otherUser,
                               resultCallBack: (result) {
-                                if (result) {
+                                if (result &&
+                                    _scrollController.positions.isNotEmpty) {
                                   _scrollController.animateTo(
                                     0.0,
                                     duration: const Duration(milliseconds: 10),
                                     curve: Curves.easeOut,
+                                  );
+
+                                  NotificationService.sendNotification(
+                                    currentUser: widget.currentUser,
+                                    messageToBeSent: message.message,
                                   );
                                 }
                               },
@@ -261,11 +293,24 @@ class _ChatPageState extends State<ChatPage> {
     UserViewModelBloc userViewModelBloc = context.read<UserViewModelBloc>();
 
     userViewModelBloc.add(GetMessagesEvent(
-      currentUserID: widget.currentUser.userID,
       otherUserID: widget.otherUser.userID,
       message: message,
       countOfWillBeFetchedMessageCount: _countOfWillBeFetchedMessageCount,
       isInitFunction: isInitFunction,
     ));
+  }
+
+  String getFormattedDate(DateTime date) {
+    DateTime now = DateTime.now();
+    DateTime today = DateTime(now.year, now.month, now.day);
+    DateTime yesterday = today.subtract(Duration(days: 1));
+
+    if (date.isAfter(today)) {
+      return "Today";
+    } else if (date.isAfter(yesterday)) {
+      return "Yesterday";
+    } else {
+      return DateFormat('EEEE').format(date);
+    }
   }
 }

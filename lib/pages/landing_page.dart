@@ -50,7 +50,6 @@ class _LandingPageState extends State<LandingPage> {
           return const PopScope(
             canPop: false,
             child: Scaffold(
-              backgroundColor: Consts.backgroundColor,
               body: Center(
                 child: CircularProgressIndicator(color: Consts.inactiveColor),
               ),
@@ -65,7 +64,6 @@ class _LandingPageState extends State<LandingPage> {
         }
       } else {
         return Scaffold(
-          backgroundColor: Consts.backgroundColor,
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -92,7 +90,6 @@ class _LandingPageState extends State<LandingPage> {
       }
     } else {
       return Scaffold(
-        backgroundColor: Consts.backgroundColor,
         body: Center(
           child: CircularProgressIndicator(color: Consts.inactiveColor),
         ),

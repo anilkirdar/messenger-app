@@ -60,8 +60,7 @@ class UserRepository {
   }
 
   Future<void> addStory(
-      {required String userID,
-      required XFile newStoryPhoto}) async {
+      {required String userID, required XFile newStoryPhoto}) async {
     if (_appMode == AppMode.debug) {
       return;
     } else {
@@ -97,15 +96,18 @@ class UserRepository {
 
   Future<bool?> saveChatMessage(
       {required MessageModel message,
-      required String currentUserID,
+      required UserModel currentUser,
+      required UserModel otherUser,
       required ValueChanged<bool> resultCallBack}) async {
     if (_appMode == AppMode.debug) {
       return null;
     } else {
       return await _firestoreService.saveChatMessage(
-          message: message,
-          resultCallBack: resultCallBack,
-          currentUserID: currentUserID);
+        message: message,
+        resultCallBack: resultCallBack,
+        currentUser: currentUser,
+        otherUser: otherUser,
+      );
     }
   }
 
@@ -202,13 +204,13 @@ class UserRepository {
   }
 
   Future<Stream<List<ChatModel>>> getChatListStream(
-      {required UserModel currentUser,
+      {required String currentUserID,
       required int countOfWillBeFetchedChatCount}) async {
     if (_appMode == AppMode.debug) {
       return Stream.empty();
     } else {
       return _firestoreService.getChatListStream(
-        currentUser: currentUser,
+        currentUserID: currentUserID,
         countOfWillBeFetchedChatCount: countOfWillBeFetchedChatCount,
       );
     }
@@ -235,7 +237,7 @@ class UserRepository {
       return await _fakeAuthService.signWithGoogle();
     } else {
       UserModel? user = await _firebaseAuthService.signWithGoogle();
-      bool? result = await _firestoreService.saveUser(user);
+      bool? result = await _firestoreService.saveUser(user: user);
 
       if (result) {
         return await _firestoreService.readUser(user!.userID);
@@ -256,7 +258,8 @@ class UserRepository {
         UserModel willReturnUser =
             await _firestoreService.readUser(user.userID);
 
-        await _firestoreService.addDefaultStorySettingsToUser(user: willReturnUser);
+        await _firestoreService.addDefaultStorySettingsToUser(
+            user: willReturnUser);
 
         return willReturnUser;
       } else {
@@ -265,19 +268,19 @@ class UserRepository {
     }
   }
 
-  Future<UserModel?> signUpWithEmail(String email, String password) async {
+  Future<UserModel?> signUpWithEmail(String email, String pass) async {
     if (_appMode == AppMode.debug) {
-      return await _fakeAuthService.signUpWithEmail(email, password);
+      return await _fakeAuthService.signUpWithEmail(email, pass);
     } else {
-      UserModel? user =
-          await _firebaseAuthService.signUpWithEmail(email, password);
-      bool result = await _firestoreService.saveUser(user);
+      UserModel? user = await _firebaseAuthService.signUpWithEmail(email, pass);
+      bool result = await _firestoreService.saveUser(user: user, pass: pass);
 
       if (result) {
         UserModel willReturnUser =
             await _firestoreService.readUser(user!.userID);
 
-        await _firestoreService.addDefaultStorySettingsToUser(user: willReturnUser);
+        await _firestoreService.addDefaultStorySettingsToUser(
+            user: willReturnUser);
 
         return willReturnUser;
       } else {

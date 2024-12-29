@@ -26,6 +26,6 @@ class StoryModel {
 
   @override
   String toString() {
-    return 'StoryModel(userName: ${user.userName}';
+    return 'StoryModel(userID: ${user.userID}, storyDetailsList: $storyDetailsList';
   }
 }

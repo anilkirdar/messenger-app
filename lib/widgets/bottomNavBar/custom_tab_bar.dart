@@ -1,7 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import '../consts/consts.dart';
+import '../../consts/consts.dart';
 
 // ignore: must_be_immutable
 class CustomTabBar extends StatelessWidget implements CupertinoTabBar {
@@ -49,53 +50,67 @@ class CustomTabBar extends StatelessWidget implements CupertinoTabBar {
 
   @override
   Widget build(BuildContext context) {
-    final int centerIndex = ((items.length - 1) / 2).round();
+    // final int centerIndex = ((items.length - 1) / 2).round();
     final Size size = MediaQuery.of(context).size;
 
     return SizedBox(
       height: height,
-      child: Stack(
-        children: [
-          CustomPaint(
-            size: Size(size.width, size.height / 12),
-            painter: BottomNavBarCustomPainter(),
-          ),
-          Center(
-            heightFactor: 0.6,
-            child: CircleAvatar(
-              radius: 28,
-              backgroundColor: Consts.primaryAppColor,
-              child: _buildSingleTabItem(
-                item: items[centerIndex],
-                index: centerIndex,
-                active: false,
-                // active: currentIndex == centerIndex,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: size.width,
-            height: 80,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: _buildTabItems(centerIndex: centerIndex),
-            ),
-          ),
-        ],
+      child: SizedBox(
+        width: size.width,
+        height: 80,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: _buildTabItems(),
+        ),
       ),
     );
+
+    // return SizedBox(
+    //   height: height,
+    //   child: Stack(
+    //     children: [
+    //       CustomPaint(
+    //         size: Size(size.width, size.height / 12),
+    //         painter: BottomNavBarCustomPainter(),
+    //       ),
+    //       Center(
+    //         heightFactor: 0.6,
+    //         child: CircleAvatar(
+    //           radius: 28,
+    //           backgroundColor: Consts.primaryAppColor,
+    //           child: _buildSingleTabItem(
+    //             item: items[centerIndex],
+    //             index: centerIndex,
+    //             active: false,
+    //             // active: currentIndex == centerIndex,
+    //           ),
+    //         ),
+    //       ),
+    //       SizedBox(
+    //         width: size.width,
+    //         height: 80,
+    //         child: Row(
+    //           mainAxisAlignment: MainAxisAlignment.spaceAround,
+    //           children: _buildTabItems(centerIndex: centerIndex),
+    //         ),
+    //       ),
+    //     ],
+    //   ),
+    // );
   }
 
-  List<Widget> _buildTabItems({required int centerIndex}) {
+  List<Widget> _buildTabItems() {
     List<Widget> list = [];
     for (var index = 0; index < items.length; index++) {
       final bool active = index == currentIndex;
-      if (centerIndex == index) {
-        list.add(SizedBox());
-      } else {
-        list.add(_buildSingleTabItem(
-            item: items[index], index: index, active: active));
-      }
+      list.add(_buildSingleTabItem(
+          item: items[index], index: index, active: active));
+      // if (centerIndex == index) {
+      //   list.add(SizedBox());
+      // } else {
+      //   list.add(_buildSingleTabItem(
+      //       item: items[index], index: index, active: active));
+      // }
     }
     return list;
   }
@@ -104,16 +119,29 @@ class CustomTabBar extends StatelessWidget implements CupertinoTabBar {
       {required BottomNavigationBarItem item,
       required int index,
       required bool active}) {
-    return IconButton(
-      highlightColor: Colors.transparent,
-      onPressed: () {
-        onTap!(index);
-        if (currentIndex != index) {
-          currentIndex = index;
-        }
-      },
-      icon: active ? item.activeIcon : item.icon,
-      iconSize: iconSize,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          highlightColor: Colors.transparent,
+          onPressed: () {
+            onTap!(index);
+            if (currentIndex != index) {
+              currentIndex = index;
+            }
+          },
+          icon: active ? item.activeIcon : item.icon,
+          iconSize: iconSize,
+        ),
+        Text(
+          item.label!,
+          style: GoogleFonts.poppins(
+            color: active ? Consts.primaryAppColor : Consts.inactiveColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ],
     );
   }
 
@@ -121,8 +149,7 @@ class CustomTabBar extends StatelessWidget implements CupertinoTabBar {
   bool opaque(BuildContext context) {
     final Color backgroundColor =
         this.backgroundColor ?? CupertinoTheme.of(context).barBackgroundColor;
-    return CupertinoDynamicColor.resolve(backgroundColor, context).a ==
-        0xFF;
+    return CupertinoDynamicColor.resolve(backgroundColor, context).a == 0xFF;
   }
 
   @override

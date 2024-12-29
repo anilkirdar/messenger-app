@@ -70,7 +70,7 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState>
 
     on<GetChatsEvent>((event, emit) async {
       chatListStream = await _userRepository.getChatListStream(
-        currentUser: event.currentUser,
+        currentUserID: user!.userID,
         countOfWillBeFetchedChatCount: event.countOfWillBeFetchedChatCount,
       );
       emit(UserViewModelIdleState());
@@ -78,9 +78,11 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState>
 
     on<SaveChatMessageEvent>((event, emit) async {
       await _userRepository.saveChatMessage(
-          message: event.message,
-          resultCallBack: event.resultCallBack,
-          currentUserID: user!.userID);
+        message: event.message,
+        resultCallBack: event.resultCallBack,
+        currentUser: user!,
+        otherUser: event.otherUser,
+      );
 
       emit(UserViewModelIdleState());
     });
@@ -125,15 +127,13 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState>
       if (event.isInitFunction) {
         _userRepository
             .messageListener(
-                currentUserID: event.currentUserID,
-                otherUserID: event.otherUserID)
+                currentUserID: user!.userID, otherUserID: event.otherUserID)
             .listen(
           (messageListFromStream) async {
             if (messageListFromStream.isNotEmpty) {
               if (messageListFromStream[0] != null && messageList != null) {
-                debugPrint(
-                    "LISTENER CALLED message: ${messageListFromStream[0]?.message}");
-                messageList!.insert(0, messageListFromStream[0]!);
+                // messageList!.insert(0, messageListFromStream[0]!);
+                messageList!.add(messageListFromStream[0]!);
               }
             }
           },
@@ -142,7 +142,7 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState>
       }
       emit(UserViewModelMessageDBBusyState());
       messageList = await _userRepository.getMessages(
-        currentUserID: event.currentUserID,
+        currentUserID: user!.userID,
         otherUserID: event.otherUserID,
         message: event.message,
         countOfWillBeFetchedMessageCount:
@@ -161,7 +161,7 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState>
 
     on<UpdateUserNameEvent>((event, emit) async {
       bool? result = await _userRepository.updateUserName(
-          userID: event.userID,
+          userID: user!.userID,
           newUserName: event.newUserName,
           resultCallBack: event.resultCallBack);
 
@@ -173,22 +173,22 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState>
 
     on<UpdateUserPassEvent>((event, emit) async {
       await _userRepository.updateUserPass(
-          userID: event.userID, newPass: event.newPass);
+          userID: user!.userID, newPass: event.newPass);
       emit(UserViewModelIdleState());
     });
 
     on<DeleteUserEvent>((event, emit) async {
-      bool result1 =
-          await _userRepository.deleteUser(currentUser: event.currentUser);
-      if (result1) {
+      bool result = await _userRepository.deleteUser(currentUser: user!);
+      if (result) {
         user = null;
       }
+      event.resultCallBack(result);
       emit(UserViewModelIdleState());
     });
 
     on<UpdateUserProfilePhotoEvent>((event, emit) async {
       String? url = await _userRepository.updateUserProfilePhoto(
-          userID: event.userID, newProfilePhoto: event.newProfilePhoto!);
+          userID: user!.userID, newProfilePhoto: event.newProfilePhoto!);
 
       user!.profilePhotoURL = url;
     });
@@ -212,6 +212,7 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState>
         storyList = null;
         messageList = null;
         chatListStream = null;
+        _userRepository.setNull();
         emit(UserViewModelBusyState());
         user = await _userRepository.signWithGoogle();
         emit(UserViewModelIdleState());
@@ -226,6 +227,7 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState>
       storyList = null;
       messageList = null;
       chatListStream = null;
+      _userRepository.setNull();
       emit(UserViewModelBusyState());
       user = await _userRepository.signInWithEmail(event.email, event.pass);
       if (user != null) {
@@ -241,7 +243,7 @@ class UserViewModelBloc extends Bloc<UserViewModelEvent, UserViewModelState>
       storyList = null;
       messageList = null;
       chatListStream = null;
-
+      _userRepository.setNull();
       if (checkUserEmailAndPassword(email: event.email, pass: event.pass)) {
         emit(UserViewModelBusyState());
         user = await _userRepository.signUpWithEmail(

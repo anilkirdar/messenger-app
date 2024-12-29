@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -72,21 +71,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _passTextFieldError = null;
       },
       child: Scaffold(
-        backgroundColor: Consts.backgroundColor,
         appBar: AppBar(
-          backgroundColor: Consts.backgroundColor,
-          // leading: Padding(
-          //   padding: const EdgeInsets.only(left: 20),
-          //   child: IconButton(
-          //     onPressed: () {
-          //       Navigator.of(context).pop();
-          //     },
-          //     icon: Icon(
-          //       Icons.arrow_back_ios,
-          //       color: Colors.black54,
-          //     ),
-          //   ),
-          // ),
           centerTitle: true,
           title: const Text(
             'Edit Profile',
@@ -98,273 +83,297 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
             child: SizedBox(
               height: size.height,
               width: size.width,
-              child: Column(
+              child: Stack(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 25),
-                    child: Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16),
-                          child: CircleAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.white,
-                            backgroundImage: _newPickedImage != null
-                                ? FileImage(File(_newPickedImage!.path))
-                                : CachedNetworkImageProvider(
-                                    userViewModelBloc.user!.profilePhotoURL!),
-                          ),
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      height: (MediaQuery.of(context).size.height / 2) +
+                          MediaQuery.of(context).size.height / 5,
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage(
+                              'assets/images/login-page-illustration.png'),
+                          fit: BoxFit.cover,
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              builder: (context) {
-                                return SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.height / 5,
-                                  child: Column(
-                                    children: [
-                                      ListTile(
-                                        leading: const FaIcon(
-                                            FontAwesomeIcons.camera),
-                                        title: const Text('Take a photo'),
-                                        onTap: () async {
-                                          await pickImageFromCamera().then(
-                                            (value) {
-                                              if (_isProfilePhotoChanged) {
-                                                _saveButtonColor =
-                                                    Consts.primaryAppColor;
-                                                _saveButtonTextColor =
-                                                    Colors.black;
-                                              } else {
-                                                _saveButtonColor =
-                                                    Consts.inactiveColor;
-                                                _saveButtonTextColor =
-                                                    Colors.grey.shade400;
-                                              }
-                                              setState(() {});
+                      ),
+                    ),
+                  ),
+                  Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 25),
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 16),
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: Colors.white,
+                                backgroundImage: _newPickedImage != null
+                                    ? FileImage(File(_newPickedImage!.path))
+                                    : CachedNetworkImageProvider(
+                                        userViewModelBloc
+                                            .user!.profilePhotoURL!),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  builder: (context) {
+                                    return SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height /
+                                              5,
+                                      child: Column(
+                                        children: [
+                                          ListTile(
+                                            leading: const FaIcon(
+                                                FontAwesomeIcons.camera),
+                                            title: const Text('Take a photo'),
+                                            onTap: () async {
+                                              await pickImageFromCamera().then(
+                                                (value) {
+                                                  if (_isProfilePhotoChanged) {
+                                                    _saveButtonColor =
+                                                        Consts.primaryAppColor;
+                                                    _saveButtonTextColor =
+                                                        Colors.black;
+                                                  } else {
+                                                    _saveButtonColor =
+                                                        Consts.inactiveColor;
+                                                    _saveButtonTextColor =
+                                                        Colors.grey.shade400;
+                                                  }
+                                                  setState(() {});
+                                                },
+                                              );
                                             },
-                                          );
-                                        },
-                                      ),
-                                      ListTile(
-                                        leading: const FaIcon(
-                                            FontAwesomeIcons.image),
-                                        title:
-                                            const Text('Choose from gallery'),
-                                        onTap: () async {
-                                          await pickImageFromGallery().then(
-                                            (value) {
-                                              if (_isProfilePhotoChanged) {
-                                                _saveButtonColor =
-                                                    Consts.primaryAppColor;
-                                                _saveButtonTextColor =
-                                                    Colors.black;
-                                              } else {
-                                                _saveButtonColor =
-                                                    Consts.inactiveColor;
-                                                _saveButtonTextColor =
-                                                    Colors.grey.shade400;
-                                              }
-                                              setState(() {});
+                                          ),
+                                          ListTile(
+                                            leading: const FaIcon(
+                                                FontAwesomeIcons.image),
+                                            title: const Text(
+                                                'Choose from gallery'),
+                                            onTap: () async {
+                                              await pickImageFromGallery().then(
+                                                (value) {
+                                                  if (_isProfilePhotoChanged) {
+                                                    _saveButtonColor =
+                                                        Consts.primaryAppColor;
+                                                    _saveButtonTextColor =
+                                                        Colors.black;
+                                                  } else {
+                                                    _saveButtonColor =
+                                                        Consts.inactiveColor;
+                                                    _saveButtonTextColor =
+                                                        Colors.grey.shade400;
+                                                  }
+                                                  setState(() {});
+                                                },
+                                              );
                                             },
-                                          );
-                                        },
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
+                                    );
+                                  },
                                 );
                               },
-                            );
-                          },
-                          child: CircleAvatar(
-                            backgroundColor: Consts.primaryAppColor,
-                            child: FaIcon(
-                              FontAwesomeIcons.pencil,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    'Edit your profile',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 30, vertical: 30),
-                    child: Column(
-                      children: [
-                        ProfilePageInputWidget(
-                          errorText: _userNameTextFieldError,
-                          initialValue: userViewModelBloc.user!.userName,
-                          labelText: 'Username',
-                          focusNode: _focusNode1,
-                          onChanged: (value) {
-                            _userName = value;
-
-                            if (value.trim().isEmpty) {
-                              _userNameTextFieldError =
-                                  'You can not leave empty this field!';
-                            } else {
-                              _userNameTextFieldError = null;
-                              if (value == userViewModelBloc.user!.userName) {
-                                _isUserNameChanged = false;
-                              } else {
-                                _isUserNameChanged = true;
-                              }
-                            }
-
-                            if (_newPassController.text.isNotEmpty ||
-                                _confirmPassController.text.isNotEmpty ||
-                                _isUserNameChanged) {
-                              _saveButtonColor = Consts.primaryAppColor;
-                              _saveButtonTextColor = Colors.black;
-                            } else {
-                              _saveButtonColor = Consts.inactiveColor;
-                              _saveButtonTextColor = Colors.grey.shade400;
-                            }
-                            setState(() {});
-                          },
-                          prefixIcon: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 20),
-                              child: FaIcon(
-                                FontAwesomeIcons.solidUser,
-                                size: 16,
+                              child: CircleAvatar(
+                                backgroundColor: Consts.primaryAppColor,
+                                child: FaIcon(
+                                  FontAwesomeIcons.pencil,
+                                  size: 20,
+                                ),
                               ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        ProfilePageInputWidget(
-                          fillColor:
-                              CupertinoColors.inactiveGray.withOpacity(0.5),
-                          readOnly: true,
-                          initialValue: userViewModelBloc.user!.email,
-                          labelText: '',
-                          prefixIcon: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 20),
-                              child: FaIcon(
-                                FontAwesomeIcons.solidEnvelope,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        ProfilePageInputWidget(
-                          controller: _newPassController,
-                          focusNode: _focusNode2,
-                          errorText: _passTextFieldError,
-                          onChanged: (value) {
-                            _passTextFieldError = null;
-                            _newPassController.text = value;
-                            if (_newPassController.text.isNotEmpty ||
-                                _confirmPassController.text.isNotEmpty ||
-                                _isUserNameChanged) {
-                              _saveButtonColor = Consts.primaryAppColor;
-                              _saveButtonTextColor = Colors.black;
-                            } else {
-                              _saveButtonColor = Consts.inactiveColor;
-                              _saveButtonTextColor = Colors.grey.shade400;
-                            }
-                            setState(() {});
-                          },
-                          labelText: 'New Password',
-                          obscureText: true,
-                          prefixIcon: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 20),
-                              child: FaIcon(
-                                FontAwesomeIcons.lock,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        ProfilePageInputWidget(
-                          focusNode: _focusNode3,
-                          controller: _confirmPassController,
-                          errorText: _passTextFieldError,
-                          onChanged: (value) {
-                            _passTextFieldError = null;
-                            _confirmPassController.text = value;
-                            if (_newPassController.text.isNotEmpty ||
-                                _confirmPassController.text.isNotEmpty ||
-                                _isUserNameChanged) {
-                              _saveButtonColor = Consts.primaryAppColor;
-                              _saveButtonTextColor = Colors.black;
-                            } else {
-                              _saveButtonColor = Consts.inactiveColor;
-                              _saveButtonTextColor = Colors.grey.shade400;
-                            }
-                            setState(() {});
-                          },
-                          labelText: 'Confirm Password',
-                          obscureText: true,
-                          prefixIcon: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 20),
-                              child: FaIcon(
-                                FontAwesomeIcons.lock,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SignPageButtonWidget(
-                    extraHorizontalPadding: 50,
-                    hasBorder: false,
-                    buttonText: 'Save Changes',
-                    buttonColor: _saveButtonColor,
-                    buttonTextColor: _saveButtonTextColor,
-                    onPressed: updateUserInformation,
-                  ),
-                  SizedBox(height: 30),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Row(
-                          children: [
-                            Text('Joined'),
-                            Text(
-                              ' ${_dateTimeFormatter(userViewModelBloc.user!.createdAt!)}',
-                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
-                        ElevatedButton(
-                          onPressed: () =>
-                              makeApproveForDeleteUser(userViewModelBloc),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.shade100,
-                          ),
-                          child: Text(
-                            'Delete',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
+                      ),
+                      Text(
+                        'Edit your profile',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 30, vertical: 30),
+                        child: Column(
+                          children: [
+                            ProfilePageInputWidget(
+                              fillColor: Consts.backgroundColor,
+                              errorText: _userNameTextFieldError,
+                              initialValue: userViewModelBloc.user!.userName,
+                              labelText: 'Username',
+                              focusNode: _focusNode1,
+                              onChanged: (value) {
+                                _userName = value;
+
+                                if (value.trim().isEmpty) {
+                                  _userNameTextFieldError =
+                                      'You can not leave empty this field!';
+                                } else {
+                                  _userNameTextFieldError = null;
+                                  if (value ==
+                                      userViewModelBloc.user!.userName) {
+                                    _isUserNameChanged = false;
+                                  } else {
+                                    _isUserNameChanged = true;
+                                  }
+                                }
+
+                                if (_newPassController.text.isNotEmpty ||
+                                    _confirmPassController.text.isNotEmpty ||
+                                    _isUserNameChanged) {
+                                  _saveButtonColor = Consts.primaryAppColor;
+                                  _saveButtonTextColor = Colors.black;
+                                } else {
+                                  _saveButtonColor = Consts.inactiveColor;
+                                  _saveButtonTextColor = Colors.grey.shade400;
+                                }
+                                setState(() {});
+                              },
+                              prefixIcon: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 20),
+                                  child: FaIcon(
+                                    FontAwesomeIcons.solidUser,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                            SizedBox(height: 10),
+                            ProfilePageInputWidget(
+                              fillColor:
+                                  Consts.inactiveColor.withValues(alpha: 0.5),
+                              readOnly: true,
+                              initialValue: userViewModelBloc.user!.email,
+                              labelText: '',
+                              prefixIcon: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 20),
+                                  child: FaIcon(
+                                    FontAwesomeIcons.solidEnvelope,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 10),
+                            ProfilePageInputWidget(
+                              fillColor: Consts.backgroundColor,
+                              controller: _newPassController,
+                              focusNode: _focusNode2,
+                              errorText: _passTextFieldError,
+                              onChanged: (value) {
+                                _passTextFieldError = null;
+                                _newPassController.text = value;
+                                if (_newPassController.text.isNotEmpty ||
+                                    _confirmPassController.text.isNotEmpty ||
+                                    _isUserNameChanged) {
+                                  _saveButtonColor = Consts.primaryAppColor;
+                                  _saveButtonTextColor = Colors.black;
+                                } else {
+                                  _saveButtonColor = Consts.inactiveColor;
+                                  _saveButtonTextColor = Colors.grey.shade400;
+                                }
+                                setState(() {});
+                              },
+                              labelText: 'New Password',
+                              obscureText: true,
+                              prefixIcon: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 20),
+                                  child: FaIcon(
+                                    FontAwesomeIcons.lock,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 10),
+                            ProfilePageInputWidget(
+                              fillColor: Consts.backgroundColor,
+                              focusNode: _focusNode3,
+                              controller: _confirmPassController,
+                              errorText: _passTextFieldError,
+                              onChanged: (value) {
+                                _passTextFieldError = null;
+                                _confirmPassController.text = value;
+                                if (_newPassController.text.isNotEmpty ||
+                                    _confirmPassController.text.isNotEmpty ||
+                                    _isUserNameChanged) {
+                                  _saveButtonColor = Consts.primaryAppColor;
+                                  _saveButtonTextColor = Colors.black;
+                                } else {
+                                  _saveButtonColor = Consts.inactiveColor;
+                                  _saveButtonTextColor = Colors.grey.shade400;
+                                }
+                                setState(() {});
+                              },
+                              labelText: 'Confirm Password',
+                              obscureText: true,
+                              prefixIcon: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 20),
+                                  child: FaIcon(
+                                    FontAwesomeIcons.lock,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      SignPageButtonWidget(
+                        extraHorizontalPadding: 50,
+                        hasBorder: false,
+                        buttonText: 'Save Changes',
+                        buttonColor: _saveButtonColor,
+                        buttonTextColor: _saveButtonTextColor,
+                        onPressed: updateUserInformation,
+                      ),
+                      SizedBox(height: 30),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Row(
+                              children: [
+                                Text('Joined'),
+                                Text(
+                                  ' ${_dateTimeFormatter(userViewModelBloc.user!.createdAt!)}',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            ElevatedButton(
+                              onPressed: () =>
+                                  makeApproveForDeleteUser(userViewModelBloc),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade100,
+                              ),
+                              child: Text(
+                                'Delete',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -384,21 +393,24 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     ).showAlertDialog(context);
 
     if (result!) {
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red.shade600,
-          content: Text(
-            'User successfully deleted!',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      );
-
-      userViewModelBloc
-          .add(DeleteUserEvent(currentUser: userViewModelBloc.user!));
-      // ignore: use_build_context_synchronously
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      userViewModelBloc.add(DeleteUserEvent(
+        resultCallBack: (result) {
+          if (result) {
+            // ignore: use_build_context_synchronously
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            // ignore: use_build_context_synchronously
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: Colors.red.shade600,
+                content: Text(
+                  'Account successfully deleted!',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            );
+          }
+        },
+      ));
     }
   }
 
@@ -478,7 +490,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       if (_isUserNameChanged) {
         if (_userName.trim().isNotEmpty) {
           userViewModelBloc.add(UpdateUserNameEvent(
-            userID: userViewModelBloc.user!.userID,
             newUserName: _userName.trim(),
             resultCallBack: (result) {
               if (!result) {
@@ -502,7 +513,6 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       if (_isProfilePhotoChanged) {
         userViewModelBloc.add(
           UpdateUserProfilePhotoEvent(
-            userID: userViewModelBloc.user!.userID,
             newProfilePhoto: _newPickedImage,
           ),
         );
@@ -511,25 +521,28 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       if (_newPassController.text == _confirmPassController.text) {
         if (_newPassController.text.trim().isNotEmpty ||
             _confirmPassController.text.trim().isNotEmpty) {
-          _passTextFieldError = null;
-          userViewModelBloc.add(
-            UpdateUserPassEvent(
-              userID: userViewModelBloc.user!.userID,
-              newPass: _newPassController.text.trim(),
-            ),
-          );
-          _newPassController.clear();
-          _confirmPassController.clear();
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: Consts.tertiaryAppColor,
-              content: Text(
-                'Password successfully changed!',
-                style: TextStyle(color: Colors.white),
+          if (_newPassController.text.trim().length > 6) {
+            _passTextFieldError = null;
+            userViewModelBloc.add(
+              UpdateUserPassEvent(
+                newPass: _newPassController.text.trim(),
               ),
-            ),
-          );
+            );
+            _newPassController.clear();
+            _confirmPassController.clear();
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: Consts.tertiaryAppColor,
+                content: Text(
+                  'Password successfully changed!',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            );
+          } else {
+            _passTextFieldError = 'Passwords must be high 6 length!';
+          }
         }
       } else {
         _passTextFieldError = 'Passwords must be equal!';

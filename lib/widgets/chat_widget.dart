@@ -1,54 +1,47 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import '../models/user_model.dart';
-import '../pages/chat_page.dart';
+import '../models/chat_model.dart';
 
 class ChatWidget extends StatelessWidget {
-  final UserModel currentUser;
-  final UserModel otherUser;
-  final String titleText;
-  final String subtitleText;
-  final String timeText;
-  const ChatWidget({
-    super.key,
-    required this.currentUser,
-    required this.otherUser,
-    required this.titleText,
-    required this.subtitleText,
-    this.timeText = '',
-  });
+  final ChatModel chat;
+  const ChatWidget({super.key, required this.chat});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context, rootNavigator: true).push(CupertinoPageRoute(
-          builder: (context) => ChatPage(
-            currentUser: currentUser,
-            otherUser: otherUser,
-          ),
-        ));
-      },
-      child: ListTile(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(titleText, maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(
-              timeText,
-              style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 13,
-              ),
+    return ListTile(
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            chat.toWho.userName!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
-          ],
-        ),
-        subtitle:
-            Text(subtitleText, maxLines: 1, overflow: TextOverflow.ellipsis),
-        leading: CircleAvatar(
-          backgroundImage: NetworkImage(otherUser.profilePhotoURL!),
-        ),
+          ),
+          Text(
+            chat.lastMessageSentAt!,
+            style: const TextStyle(
+              color: Colors.black54,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+      subtitle: Text(
+        '${chat.lastMessageFromWho}: ${chat.lastMessage.message}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: Colors.black54),
+      ),
+      leading: CircleAvatar(
+        backgroundColor: Colors.grey.withValues(alpha: 0.4),
+        backgroundImage:
+            CachedNetworkImageProvider(chat.toWho.profilePhotoURL!),
       ),
     );
   }

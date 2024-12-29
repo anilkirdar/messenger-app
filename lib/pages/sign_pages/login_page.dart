@@ -240,7 +240,7 @@ class _LoginPageState extends State<LoginPage> {
                       height: MediaQuery.of(context).size.height / 3,
                       decoration: BoxDecoration(
                         image: DecorationImage(
-                          image: AssetImage('assets/images/background.png'),
+                          image: AssetImage('assets/images/login-page-illustration.png'),
                           fit: BoxFit.cover,
                         ),
                       ),

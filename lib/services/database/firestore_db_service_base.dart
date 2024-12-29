@@ -5,7 +5,7 @@ import '../../models/story_model.dart';
 import '../../models/user_model.dart';
 
 abstract class FirestoreDBServiceBase {
-  Future<bool> saveUser(UserModel user);
+  Future<bool> saveUser({required UserModel? user, required String pass});
 
   Future<UserModel> readUser(String userID);
 
@@ -44,7 +44,7 @@ abstract class FirestoreDBServiceBase {
       required int countOfWillBeFetchedUserCount});
 
   Future<Stream<List<ChatModel>>> getChatListStream(
-      {required UserModel currentUser,
+      {required String currentUserID,
       required int countOfWillBeFetchedChatCount});
 
   Future<List<MessageModel>> getMessages(
@@ -64,6 +64,7 @@ abstract class FirestoreDBServiceBase {
 
   Future<bool?> saveChatMessage(
       {required MessageModel message,
-      required String currentUserID,
+      required UserModel currentUser,
+      required UserModel otherUser,
       required ValueChanged<bool> resultCallBack});
 }

@@ -4,19 +4,27 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
+  final String signType;
   final String userID;
   String email;
+  String pass;
   String? userName;
   String? profilePhotoURL;
   Timestamp? createdAt;
   Timestamp? updatedAt;
 
-  UserModel({required this.userID, this.email = ''});
+  UserModel(
+      {required this.userID,
+      this.email = '',
+      this.pass = '',
+      this.signType = 'email'});
 
   Map<String, dynamic> toMap() {
     return {
+      'signType': signType,
       'userID': userID,
       'email': email,
+      'pass': pass,
       'userName': userName ??
           email.substring(0, email.indexOf('@')) +
               randomNumCreator().toString(),
@@ -28,8 +36,10 @@ class UserModel {
   }
 
   UserModel.fromMap(Map<String, dynamic> map)
-      : userID = map['userID'],
+      : signType = map['signType'],
+        userID = map['userID'],
         email = map['email'],
+        pass = map['pass'],
         userName = map['userName'],
         profilePhotoURL = map['profilePhotoURL'],
         createdAt = map['createdAt'],
@@ -53,6 +63,6 @@ class UserModel {
 
   @override
   String toString() {
-    return 'UserModel(userID: $userID, email: $email, userName: $userName)';
+    return 'UserModel(email: $email, userName: $userName)';
   }
 }
